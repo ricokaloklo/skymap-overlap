@@ -23,6 +23,7 @@ def compute_overlap(ra_samples_1, dec_samples_1, ra_samples_2, dec_samples_2, nb
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute overlap in sky given posterior samples of (RA, DEC)")
     parser.add_argument("posterior_samples", nargs=2, type=str, metavar="PATH", help="Path to the two sets of posterior samples of (RA, DEC)")
+    parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
     args = parser.parse_args()
 
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     dec_2, ra_2 = np.transpose(np.loadtxt(args.posterior_samples[1]))
 
     # Actually compute the overlap
-    overlap = compute_overlap(ra_1, dec_1, ra_2, dec_2)
+    overlap = compute_overlap(ra_1, dec_1, ra_2, dec_2, nbins=args.nbins)
 
     # Save the output (just a number really)
     np.savetxt(args.output, overlap)
