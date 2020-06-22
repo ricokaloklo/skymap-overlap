@@ -109,3 +109,4 @@ if __name__ == "__main__":
     df.to_csv(args.output, sep='\t',header=True, index=False)
     if args.verbose:
         print >> sys.stderr, "Posterior samples generated from probability skymap saved to " + args.output
+

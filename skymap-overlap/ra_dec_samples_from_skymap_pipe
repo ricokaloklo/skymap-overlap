@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+import os
+from gstlal import dagparts
+import argparse
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps")
+    parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
+    parser.add_argument("--plot", action="store_true", help="Generate a corner plot of samples generated")
+    parser.add_argument("--nsamples", type=int, metavar="INT", default=20000, help="Number of samples to generate for each skymap")
+    parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.uber.gstlaloffline", help="Accounting tag")
+    parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
+
+    args = parser.parse_args()
+
+    # Create a DAG (but actually each node is independent of each other)
+    dag = dagparts.DAG("generate_samples_from_skymaps")
+
+    sampling_job = dagparts.DAGJob("ra_dec_samples_from_skymap", condor_commands={"accounting_group":args.accounting_tag})
+    sampling_nodes = []
+
+    for skymap in args.skymap:
+        basename = os.path.basename(skymap) # Get the file basename
+        if args.plot:
+            sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts={"nsamples": args.nsamples, "plot": "{}_corner_plot.pdf".format(basename)}, input_files = {"skymap": skymap}, output_files={"output": "{}_samples.dat".format(basename)}))
+        else:
+            sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts={"nsamples": args.nsamples}, input_files = {"skymap": skymap}, output_files={"output": "{}_samples.dat".format(basename)}))
+
+    dag.write_sub_files()
+    dag.write_dag()
+    dag.write_script()
