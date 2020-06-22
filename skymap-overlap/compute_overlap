@@ -25,6 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--posterior_samples", action="append", type=str, metavar="PATH", help="Path to the two sets of posterior samples of (RA, DEC)")
     parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
+    parser.add_argument("--verbose", action="store_true", help="Be verbose")
     args = parser.parse_args()
 
     assert len(args.posterior_samples) == 2, "Exactly two sets of posterior samples must be given"
@@ -33,8 +34,13 @@ if __name__ == "__main__":
     dec_1, ra_1 = np.transpose(np.loadtxt(args.posterior_samples[0], skiprows=1))
     dec_2, ra_2 = np.transpose(np.loadtxt(args.posterior_samples[1], skiprows=1))
 
-    # Actually compute the overlap
+    # Actually compute the overlap. the normalization needed and the normalized overlap
     overlap = compute_overlap(ra_1, dec_1, ra_2, dec_2, nbins=args.nbins)
+    norm_1 = compute_overlap(ra_1, dec_1, ra_1, dec_1, nbins=args.nbins)
+    norm_2 = compute_overlap(ra_2, dec_2, ra_2, dec_2, nbins=args.nbins)
+    normalized_overlap = overlap/(np.sqrt(norm_1)*np.sqrt(norm_2))
 
+    if args.verbose:
+        print("{},{},{},{}".format(normalized_overlap, norm_1, norm_2, overlap))
     # Save the output (just a number really)
-    np.savetxt(args.output, np.atleast_1d(overlap))
+    np.savetxt(args.output, np.atleast_1d(normalized_overlap))
