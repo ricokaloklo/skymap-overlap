@@ -4,10 +4,11 @@ from gstlal import dagparts
 import argparse
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps")
+    parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps, and then compute pair-wise overlap")
     parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
     parser.add_argument("--plot", action="store_true", help="Generate a corner plot of samples generated")
     parser.add_argument("--nsamples", type=int, metavar="INT", default=20000, help="Number of samples to generate for each skymap")
+    parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples")
     parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.uber.gstlaloffline", help="Accounting tag")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
 
@@ -21,10 +22,19 @@ if __name__ == "__main__":
 
     for skymap in args.skymap:
         basename = os.path.basename(skymap) # Get the file basename
+        opts = {"nsamples": args.nsamples}
         if args.plot:
-            sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts={"nsamples": args.nsamples, "plot": "{}_corner_plot.pdf".format(basename)}, input_files = {"skymap": skymap}, output_files={"output": "{}_samples.dat".format(basename)}))
-        else:
-            sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts={"nsamples": args.nsamples}, input_files = {"skymap": skymap}, output_files={"output": "{}_samples.dat".format(basename)}))
+            opts["plot"] = "{}_corner_plot.pdf".format(basename)
+        if args.verbose:
+            opts["verbose"] = True
+        
+        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files = {"skymap": skymap}, output_files={"output": "{}_samples.dat".format(basename)}))
+
+    # Make the logs directory if it doesn't exist
+    try:
+        os.mkdir("logs")
+    except:
+        pass
 
     dag.write_sub_files()
     dag.write_dag()
