@@ -6,6 +6,11 @@ import itertools
 
 def get_filename_prefix(filename):
     basename = os.path.basename(filename)
+    if ".fits.gz" in basename:
+        return basename.split(".fits.gz")[0]
+    if ".fits" in basename:
+        return basename.split(".fits")[0]
+    # Fail-safe option
     return os.path.splitext(basename)[0]
 
 
@@ -28,7 +33,7 @@ if __name__ == "__main__":
 
     sampling_job_name = "ra_dec_samples_from_skymap"
     compute_overlap_job_name = "compute_overlap"
-    
+
     sampling_job = dagparts.DAGJob(sampling_job_name, condor_commands={"accounting_group":args.accounting_tag})
     sampling_nodes = []
 
