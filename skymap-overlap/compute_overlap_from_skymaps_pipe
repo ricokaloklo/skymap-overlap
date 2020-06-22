@@ -2,33 +2,64 @@
 import os
 from gstlal import dagparts
 import argparse
+import itertools
+
+def get_filename_prefix(filename):
+    basename = os.path.basename(filename)
+    return os.path.splitext(basename)[0]
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps, and then compute pair-wise overlap")
     parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
     parser.add_argument("--plot", action="store_true", help="Generate a corner plot of samples generated")
     parser.add_argument("--nsamples", type=int, metavar="INT", default=20000, help="Number of samples to generate for each skymap")
-    parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples")
+    parser.add_argument("--nbins", type=int, default=100, metavar="INT", help="Number of bins when histogramming the samples")
     parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.uber.gstlaloffline", help="Accounting tag")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
 
     args = parser.parse_args()
 
-    # Create a DAG (but actually each node is independent of each other)
-    dag = dagparts.DAG("generate_samples_from_skymaps")
+    samples_out_str = "{prefix}_samples.dat"
+    pairwise_overlap_out_str = "{prefix_1}_{prefix_2}_overlap.dat"
 
-    sampling_job = dagparts.DAGJob("ra_dec_samples_from_skymap", condor_commands={"accounting_group":args.accounting_tag})
+    # Create a DAG (but actually each node is independent of each other)
+    dag = dagparts.DAG("compute_overlap_from_skymaps")
+
+    sampling_job_name = "ra_dec_samples_from_skymap"
+    compute_overlap_job_name = "compute_overlap"
+    
+    sampling_job = dagparts.DAGJob(sampling_job_name, condor_commands={"accounting_group":args.accounting_tag})
     sampling_nodes = []
 
     for skymap in args.skymap:
-        basename = os.path.basename(skymap) # Get the file basename
+        prefix = get_filename_prefix(skymap)
         opts = {"nsamples": args.nsamples}
         if args.plot:
-            opts["plot"] = "{}_corner_plot.pdf".format(basename)
+            opts["plot"] = "{}_corner_plot.pdf".format(prefix)
         if args.verbose:
-            opts["verbose"] = True
+            opts["verbose"] = ""
         
-        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files = {"skymap": skymap}, output_files={"output": "{}_samples.dat".format(basename)}))
+        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": skymap}, output_files={"output": samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
+
+
+    if len(args.skymap) >= 2:
+        # At least two skymaps, now we can compute the pairwise overlap
+        compute_overlap_job = dagparts.DAGJob(compute_overlap_job_name, condor_commands={"accounting_group":args.accounting_tag})
+        pairwise_overlap_nodes = []
+
+        for sampling_node_1, sampling_node_2 in list(itertools.combinations(sampling_nodes, 2)):
+            skymap_1 = sampling_node_1.input_files["skymap"]
+            skymap_2 = sampling_node_2.input_files["skymap"]
+            prefix_1 = get_filename_prefix(skymap_1)
+            prefix_2 = get_filename_prefix(skymap_2)
+
+            opts = {"nbins": args.nbins}
+            if args.verbose:
+                opts["verbose"] = ""
+
+            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[sampling_node_1, sampling_node_2], opts=opts, input_files={"posterior_samples": [samples_out_str.format(prefix=sampling_job_name + "/" + prefix_1), samples_out_str.format(prefix=sampling_job_name + "/" + prefix_2)]}, output_files={"output": compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
+
 
     # Make the logs directory if it doesn't exist
     try:
