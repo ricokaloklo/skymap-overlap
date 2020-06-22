@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from ligo.gracedb.rest import GraceDb
 import argparse
 
