@@ -113,5 +113,5 @@ if __name__ == "__main__":
             print >> sys.stderr, "Posterior samples generated from probability skymap saved to " + args.output
     else:
         if args.verbose:
-            print >> sys.stderr, args.output + "already exists. Quitting now"
+            print >> sys.stderr, args.output + " already exists. Quitting now"
 
