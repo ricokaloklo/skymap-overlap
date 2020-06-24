@@ -6,6 +6,7 @@ import argparse
 import sys
 import itertools
 import lal
+import os
 
 def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None, verbose=True):
     """
@@ -103,10 +104,14 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", action="store_true", help="Be verbose")
     args = parser.parse_args()
 
-    ra_samples, dec_samples, _, _, _ = samples_from_prob_skymap(args.skymap, plot_filepath=args.plot, nsamples=args.nsamples, verbose=args.verbose)
-    df = pd.DataFrame(data={'ra': ra_samples, 'dec':dec_samples})
+    if not os.path.exists(args.output):
+        ra_samples, dec_samples, _, _, _ = samples_from_prob_skymap(args.skymap, plot_filepath=args.plot, nsamples=args.nsamples, verbose=args.verbose)
+        df = pd.DataFrame(data={'ra': ra_samples, 'dec':dec_samples})
 
-    df.to_csv(args.output, sep='\t',header=True, index=False)
-    if args.verbose:
-        print >> sys.stderr, "Posterior samples generated from probability skymap saved to " + args.output
+        df.to_csv(args.output, sep='\t',header=True, index=False)
+        if args.verbose:
+            print >> sys.stderr, "Posterior samples generated from probability skymap saved to " + args.output
+    else:
+        if args.verbose:
+            print >> sys.stderr, args.output + "already exists. Quitting now"
 
