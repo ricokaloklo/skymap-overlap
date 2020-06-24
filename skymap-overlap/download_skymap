@@ -2,12 +2,15 @@
 from ligo.gracedb.rest import GraceDb
 import argparse
 
-def download_skymap(id, db, args):
+def download_skymap(id, db, args, use_bayestar_only=False):
 	try:
-		# Use LALInference skymap if possible
-		r = db.files(id, "LALInference.fits.gz")
-		if args.verbose:
-			print("Using LALInference skymap for {0}".format(id))
+		# Use LALInference skymap if possible, except when use_bayestar_only is set
+		if not use_bayestar_only:
+			r = db.files(id, "LALInference.fits.gz")
+			if args.verbose:
+				print("Using LALInference skymap for {0}".format(id))
+		else:
+			raise TypeError
 	except:
 		r = db.files(id, "bayestar.fits.gz")
 		if args.verbose:
@@ -20,6 +23,7 @@ def download_skymap(id, db, args):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description = "Download skymaps from a list of events")
 	parser.add_argument("event", nargs="+", help = "A list of gravitational-wave events, can be either GID for GW event or SID for superevent")
+	parser.add_argument("--bayestar", action="store_true", help="Use bayestar skymap only")
 	parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
 	args = parser.parse_args()
 	# FIXME Make sure that you have a valid proxy
@@ -27,7 +31,7 @@ if __name__ == "__main__":
 
 	for event_id in args.event:
 		try:
-			download_skymap(event_id, client, args)
+			download_skymap(event_id, client, args, use_bayestar_only=args.bayestar)
 		except:
 			if args.verbose:
 				print("Failed to download the skymap for {}".format(event_id))
