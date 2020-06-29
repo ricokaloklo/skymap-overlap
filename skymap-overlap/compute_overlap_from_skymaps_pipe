@@ -50,7 +50,7 @@ if __name__ == "__main__":
         if args.verbose:
             opts["verbose"] = ""
         
-        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": path+skymap}, output_files={"output": samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
+        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": path_prefix + skymap}, output_files={"output": path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
 
 
     if len(args.skymap) >= 2:
@@ -68,7 +68,7 @@ if __name__ == "__main__":
             if args.verbose:
                 opts["verbose"] = ""
 
-            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[sampling_node_1, sampling_node_2], opts=opts, input_files={"posterior_samples": [samples_out_str.format(prefix=sampling_job_name + "/" + prefix_1), samples_out_str.format(prefix=sampling_job_name + "/" + prefix_2)]}, output_files={"output": compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
+            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[sampling_node_1, sampling_node_2], opts=opts, input_files={"posterior_samples": [path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix_1), path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix_2)]}, output_files={"output": path_prefix + compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
 
 
     # Make the logs directory if it doesn't exist
