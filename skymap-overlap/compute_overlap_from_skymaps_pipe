@@ -21,12 +21,17 @@ if __name__ == "__main__":
     parser.add_argument("--nsamples", type=int, metavar="INT", default=20000, help="Number of samples to generate for each skymap")
     parser.add_argument("--nbins", type=int, default=100, metavar="INT", help="Number of bins when histogramming the samples")
     parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.uber.gstlaloffline", help="Accounting tag")
+    parser.add_argument("--absolute-path", action="store_true", help="Use absolute path instead of relative path")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
 
     args = parser.parse_args()
 
     samples_out_str = "{prefix}_samples.dat"
     pairwise_overlap_out_str = "{prefix_1}_{prefix_2}_overlap.dat"
+
+    path_prefix = ""
+    if args.absolute_path:
+        path_prefix = "{}/".format(os.getcwd())
 
     # Create a DAG (but actually each node is independent of each other)
     dag = dagparts.DAG("compute_overlap_from_skymaps")
@@ -45,7 +50,7 @@ if __name__ == "__main__":
         if args.verbose:
             opts["verbose"] = ""
         
-        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": skymap}, output_files={"output": samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
+        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": path+skymap}, output_files={"output": samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
 
 
     if len(args.skymap) >= 2:
