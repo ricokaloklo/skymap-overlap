@@ -19,16 +19,6 @@ Compute the overlap between two skymaps
 Simply git clone this repository. Add ${INSTALLATION_PATH}/skymap-overlap/ to the environment variable ${PATH}.
 
 ## Usage
-### Computing the pairwise overlap between a batch of skymaps
-To compute the pairwise overlap between a batch of skymaps, you can use `compute_overlap_from_skymaps_pipe` which generates a DAG file
-for you to submit to a HTCondor-compatible cluster to draw (RA, DEC) samples from the probability skymaps and then calculate the overlap.
-The simplest usage is
-```
-compute_overlap_from_skymaps_pipe --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz --skymap SKYMAP3.fits.gz
-```
-so on and so forth. There are also other options for example the accounting tag (if you are running on LDG), and the number of samples
-you want to draw using MCMC sampling.
-
 ### Computing the overlap between two skymaps
 To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one can use `compute_overlap` to compute the overlap $`\mathcal{F}`$, which is defined as
 ```math
@@ -46,6 +36,16 @@ To draw samples of the right ascension (RA) and declination (DEC) from a probabi
 ra_dec_samples_from_skymap --skymap SKYMAP.fits.gz
 ```
 It is output a tab-delimited text file containing the drawn samples.
+
+### Computing the pairwise overlap between a batch of skymaps
+To compute the pairwise overlap between a batch of skymaps, you can use `compute_overlap_from_skymaps_pipe` which generates a DAG file
+for you to submit to a HTCondor-compatible cluster to draw (RA, DEC) samples from the probability skymaps and then calculate the overlap.
+The simplest usage is
+```
+compute_overlap_from_skymaps_pipe --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz --skymap SKYMAP3.fits.gz
+```
+so on and so forth. There are also other options for example the accounting tag (if you are running on LDG), and the number of samples
+you want to draw using MCMC sampling.
 
 ### Batch downloading skymaps from GraceDB
 You can use `download_skymap` to download skymaps from GraceDB given the GID or SID. The simplest usage is
