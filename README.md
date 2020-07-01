@@ -30,7 +30,10 @@ so on and so forth. There are also other options for example the accounting tag 
 you want to draw using MCMC sampling.
 
 ### Computing the overlap between two skymaps
-To compute the overlap between two skymaps, one can use `compute_overlap` to compute the overlap
+To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one can use `compute_overlap` to compute the overlap $`\mathcal{F}`$, which is defined as
+```math
+\mathcal{F} = \frac{\displaystyle\int_{\rm all sky} p(\Omega)q(\Omega) \; d\Omega}{\sqrt{\displaystyle\int_{\rm all sky} p(\Omega)p(\Omega) \; d\Omega}\sqrt{\displaystyle\int_{\rm all sky} q(\Omega)q(\Omega) \; d\Omega}}
+```
 given the samples drawn from the two skymaps (e.g. from `ra_dec_samples_from_skymap`). The simplest usage is
 ```
 compute_overlap --posterior_samples SAMPLES_FROM_SKYMAP1.dat --posterior_samples SAMPLES_FROM_SKYMAP2.dat
