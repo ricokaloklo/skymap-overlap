@@ -23,7 +23,7 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
     try:
         # Try using ligo.skymap to read the skymap first
         if verbose:
-            print >> sys.stderr, "Using ligo.skymap to read the skymap"
+            print("Using ligo.skymap to read the skymap", file=sys.stderr)
         import ligo.skymap.io
         hpx, metadata = ligo.skymap.io.fits.read_sky_map(skymap)
         t0 = metadata["gps_time"]
@@ -32,14 +32,14 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
         # Read t0 from skymap is t0 is not given in the option
         if t0 is None:
             if verbose:
-                print >> sys.stderr, "Using the observation time in the skymap header as t0"
+                print("Using the observation time in the skymap header as t0", file=sys.stderr)
             import astropy.io.fits # Import astropy to read the header
             import lal.gpstime
             hdu = astropy.io.fits.open(skymap)
             t0 = float(lal.gpstime.str_to_gps(hdu[1].header['DATE-OBS']))
 
         if verbose:
-            print >> sys.stderr, "Using healpy to read the skymap"
+            print("Using healpy to read the skymap", file=sys.stderr)
         hpx = hp.read_map(skymap, verbose=verbose)
 
     # Define the ln prior and ln likelihood for sampling
@@ -72,17 +72,17 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
     sampler = emcee.PTSampler(ntemps, nwalkers, ndim, ln_likelihood, ln_prior)
     # Initial burn-in stage
     if verbose:
-        print >> sys.stderr, "Initial burn-in stage for PTMCMC"
+        print("Initial burn-in stage for PTMCMC", file=sys.stderr)
     pos, ln_p, state = sampler.run_mcmc(p0, 100)
 
     # Reset the sampler
     sampler.reset()
     # Run the MCMC again
     if verbose:
-        print >> sys.stderr, "Sampling {} samples from the probability skymap using PTMCMC".format(int(3200.*(nsamples/3200.)))
+        print("Sampling {} samples from the probability skymap using PTMCMC".format(int(3200.*(nsamples/3200.))), file=sys.stderr)
     p, log_prob, log_like = sampler.run_mcmc(pos, int(10000.0*(nsamples/3200.)), rstate0=state)
     if verbose:
-        print >> sys.stderr, "Sampling completed"
+        print("Sampling completed", file=sys.stderr)
     thin = 100
     ra_samples = sampler.chain[0,:,:,0].flatten()[::thin]
     dec_samples = np.arcsin(sampler.chain[0,:,:,1].flatten()[::thin])
@@ -99,7 +99,7 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
         fig = corner.corner(np.transpose([ra_samples, dec_samples]), labels=[r"$\alpha$", r"$\delta$"])
         plt.savefig(plot_filepath)
         if verbose:
-            print >> sys.stderr, "Corner plot of samples generated from probability skymap saved to " + plot_filepath
+            print("Corner plot of samples generated from probability skymap saved to " + plot_filepath, file=sys.stderr)
 
     return ra_samples, dec_samples, psi_samples, cos_iota_samples, t0_samples
 
@@ -119,8 +119,8 @@ if __name__ == "__main__":
 
         df.to_csv(args.output, sep='\t',header=True, index=False)
         if args.verbose:
-            print >> sys.stderr, "Posterior samples generated from probability skymap saved to " + args.output
+            print("Posterior samples generated from probability skymap saved to " + args.output, file=sys.stderr)
     else:
         if args.verbose:
-            print >> sys.stderr, args.output + " already exists. Quitting now"
+            print(args.output + " already exists. Quitting now", file=sys.stderr)
 
