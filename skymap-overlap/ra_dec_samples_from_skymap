@@ -18,20 +18,27 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
     # Again we *only* support emcee 2.2.1 where PTSampler is still included
     if emcee.__version__ != '2.2.1':
         raise ValueError("Only emcee 2.2.1 is supported. Please make sure that you are using this particular version of emcee.")
-    import healpy as hp
-
-    # Read t0 from skymap is t0 is not given in the option
-    if t0 is None:
+    
+    try:
+        # Try using ligo.skymap to read the skymap first
         if verbose:
-            print >> sys.stderr, "Using the observation time in the skymap header as t0"
-        import astropy.io.fits # Import astropy to read the header
-        import lal.gpstime
-        hdu = astropy.io.fits.open(skymap)
-        t0 = float(lal.gpstime.str_to_gps(hdu[1].header['DATE-OBS']))
+            print >> sys.stderr, ""
+        import ligo.skymap.io
+        hpx, metadata = ligo.skymap.io.fits.read_sky_map(skymap)
+        t0 = metadata["gps_time"]
+    except:
+        # Fall back to healpix
+        import healpy as hp
+        # Read t0 from skymap is t0 is not given in the option
+        if t0 is None:
+            if verbose:
+                print >> sys.stderr, "Using the observation time in the skymap header as t0"
+            import astropy.io.fits # Import astropy to read the header
+            import lal.gpstime
+            hdu = astropy.io.fits.open(skymap)
+            t0 = float(lal.gpstime.str_to_gps(hdu[1].header['DATE-OBS']))
 
-    hpx = hp.read_map(skymap, verbose=verbose)
-    npix = len(hpx)
-    nside = hp.npix2nside(npix)
+        hpx = hp.read_map(skymap, verbose=verbose)
 
     # Define the ln prior and ln likelihood for sampling
     def ln_prior(x):
