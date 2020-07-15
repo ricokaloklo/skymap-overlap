@@ -6,6 +6,7 @@ import argparse
 import sys
 import itertools
 import lal
+import healpy as hp
 import os
 
 def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None, verbose=True):
@@ -28,7 +29,6 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
         t0 = metadata["gps_time"]
     except:
         # Fall back to healpix
-        import healpy as hp
         # Read t0 from skymap is t0 is not given in the option
         if t0 is None:
             if verbose:
