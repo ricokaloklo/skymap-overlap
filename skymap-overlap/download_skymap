@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from ligo.gracedb.rest import GraceDb
 import argparse
+import sys
 
 def download_skymap(id, db, args, use_bayestar_only=False):
 	try:
@@ -8,13 +9,13 @@ def download_skymap(id, db, args, use_bayestar_only=False):
 		if not use_bayestar_only:
 			r = db.files(id, "LALInference.fits.gz")
 			if args.verbose:
-				print("Using LALInference skymap for {0}".format(id))
+				print("Using LALInference skymap for {0}".format(id), file=sys.stderr)
 		else:
 			raise TypeError
 	except:
 		r = db.files(id, "bayestar.fits.gz")
 		if args.verbose:
-			print("Using Bayestar skymap for {0}".format(id))
+			print("Using Bayestar skymap for {0}".format(id), file=sys.stderr)
 
 	outfile = open("{0}_skymap.fits.gz".format(id), "wb")
 	outfile.write(r.read())
@@ -34,4 +35,4 @@ if __name__ == "__main__":
 			download_skymap(event_id, client, args, use_bayestar_only=args.bayestar)
 		except:
 			if args.verbose:
-				print("Failed to download the skymap for {}".format(event_id))
+				print("Failed to download the skymap for {}".format(event_id), file=sys.stderr)
