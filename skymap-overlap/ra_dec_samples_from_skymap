@@ -23,7 +23,7 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
     try:
         # Try using ligo.skymap to read the skymap first
         if verbose:
-            print >> sys.stderr, ""
+            print >> sys.stderr, "Using ligo.skymap to read the skymap"
         import ligo.skymap.io
         hpx, metadata = ligo.skymap.io.fits.read_sky_map(skymap)
         t0 = metadata["gps_time"]
@@ -38,6 +38,8 @@ def samples_from_prob_skymap(skymap, t0=None, nsamples=3200, plot_filepath=None,
             hdu = astropy.io.fits.open(skymap)
             t0 = float(lal.gpstime.str_to_gps(hdu[1].header['DATE-OBS']))
 
+        if verbose:
+            print >> sys.stderr, "Using healpy to read the skymap"
         hpx = hp.read_map(skymap, verbose=verbose)
 
     # Define the ln prior and ln likelihood for sampling
