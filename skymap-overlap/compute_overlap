@@ -32,13 +32,13 @@ def compute_overlap_from_healpix(skymap_1, skymap_2):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute overlap in sky given posterior samples of (RA, DEC)")
     parser.add_argument("--posterior_samples", action="append", type=str, metavar="PATH", help="Path to the two sets of posterior samples of (RA, DEC)")
-    parser.add_argument("--skymaps", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
+    parser.add_argument("--skymap", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
     parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples if posterior samples are given")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
     parser.add_argument("--verbose", action="store_true", help="Be verbose")
     args = parser.parse_args()
 
-    if len(args.skymaps) == 2:
+    if len(args.skymap) == 2:
         # Use skymaps whenever possible
         if args.verbose:
             print("Using inputs from --skymaps", file=sys.stderr)
@@ -46,8 +46,8 @@ if __name__ == "__main__":
         import ligo.skymap.io
 
         # Load the skymaps
-        hpx_1, metadata_1 = ligo.skymap.io.fits.read_sky_map(args.skymaps[0])
-        hpx_2, metadata_2 = ligo.skymap.io.fits.read_sky_map(args.skymaps[1])
+        hpx_1, metadata_1 = ligo.skymap.io.fits.read_sky_map(args.skymap[0])
+        hpx_2, metadata_2 = ligo.skymap.io.fits.read_sky_map(args.skymap[1])
 
         # Make sure that the skymaps are of the same resolution
         nside_min = np.amin([hp.get_nside(hpx_1), hp.get_nside(hpx_2)])
