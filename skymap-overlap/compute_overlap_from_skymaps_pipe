@@ -69,7 +69,7 @@ if __name__ == "__main__":
             if args.verbose:
                 opts["verbose"] = ""
 
-            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": [path_prefix + prefix_1, path_prefix + prefix_2]}, output_files={"output": path_prefix + compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
+            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": [path_prefix + skymap_1, path_prefix + skymap_2]}, output_files={"output": path_prefix + compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
 
 
     # Make the logs directory if it doesn't exist
