@@ -8,10 +8,11 @@ Compute the overlap between two skymaps
  * scipy-stack (numpy, scipy, matplotlib, pandas)
  * astropy
  * healpy
+ * ligo.skymap (only supports Python3.X)
  * lal
  * ligo-gracedb (for batch downloading skymaps)
  * corner (for generating corner plots)
- * gstlal (for generating dag files)*
+ * gstlal (for generating dag files, where the master version supports Python3 now)*
 
 *If you are using LDG head-nodes, the gstlal installed system-wide will work just fine
 
@@ -24,7 +25,11 @@ To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one 
 ```math
 \mathcal{F} = \frac{\displaystyle\int_{\rm all sky} p(\Omega)q(\Omega) \; d\Omega}{\sqrt{\displaystyle\int_{\rm all sky} p(\Omega)p(\Omega) \; d\Omega}\sqrt{\displaystyle\int_{\rm all sky} q(\Omega)q(\Omega) \; d\Omega}}
 ```
-given the samples drawn from the two skymaps (e.g. from `ra_dec_samples_from_skymap`). The simplest usage is
+1. Given two FITS skymaps, the simplest usage is
+```
+compute_overlap --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz
+```
+2. Given the samples drawn from the two skymaps (e.g. from `ra_dec_samples_from_skymap`), the simplest usage is
 ```
 compute_overlap --posterior_samples SAMPLES_FROM_SKYMAP1.dat --posterior_samples SAMPLES_FROM_SKYMAP2.dat
 ```
