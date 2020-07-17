@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 from ligo.gracedb.rest import GraceDb
 import argparse
 import sys
