@@ -73,7 +73,9 @@ if __name__ == "__main__":
     else:
         print("Failed to load either skymaps or posterior samples", file=sys.stderr)
 
-    if args.verbose:
+    if args.verbose or args.output is None:
         print("{},{},{},{}".format(normalized_overlap, norm_1, norm_2, overlap))
-    # Save the output (just a number really)
-    np.savetxt(args.output, np.atleast_1d(normalized_overlap))
+    
+    if args.output is not None:
+        # Save the output (just a number really)
+        np.savetxt(args.output, np.atleast_1d(normalized_overlap))
