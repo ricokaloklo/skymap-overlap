@@ -17,6 +17,7 @@ def get_filename_prefix(filename):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps, and then compute pair-wise overlap")
     parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
+    parser.add_argument("--generate-samples", action="store_true", help="Generate posterior samples from skymaps")
     parser.add_argument("--plot", action="store_true", help="Generate a corner plot of samples generated")
     parser.add_argument("--nsamples", type=int, metavar="INT", default=20000, help="Number of samples to generate for each skymap")
     parser.add_argument("--nbins", type=int, default=100, metavar="INT", help="Number of bins when histogramming the samples")
@@ -42,33 +43,33 @@ if __name__ == "__main__":
     sampling_job = dagparts.DAGJob(sampling_job_name, condor_commands={"accounting_group":args.accounting_tag})
     sampling_nodes = []
 
-    for skymap in args.skymap:
-        prefix = get_filename_prefix(skymap)
-        opts = {"nsamples": args.nsamples}
-        if args.plot:
-            opts["plot"] = "{}_corner_plot.pdf".format(prefix)
-        if args.verbose:
-            opts["verbose"] = ""
+    # Draw samples from skymaps
+    if args.generate_samples:
+        for skymap in args.skymap:
+            prefix = get_filename_prefix(skymap)
+            opts = {"nsamples": args.nsamples}
+            if args.plot:
+                opts["plot"] = "{}_corner_plot.pdf".format(prefix)
+            if args.verbose:
+                opts["verbose"] = ""
         
-        sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": path_prefix + skymap}, output_files={"output": path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
+            sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": path_prefix + skymap}, output_files={"output": path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
 
-
+    # Compute overlap
     if len(args.skymap) >= 2:
         # At least two skymaps, now we can compute the pairwise overlap
         compute_overlap_job = dagparts.DAGJob(compute_overlap_job_name, condor_commands={"accounting_group":args.accounting_tag})
         pairwise_overlap_nodes = []
 
-        for sampling_node_1, sampling_node_2 in list(itertools.combinations(sampling_nodes, 2)):
-            skymap_1 = sampling_node_1.input_files["skymap"]
-            skymap_2 = sampling_node_2.input_files["skymap"]
+        for skymap_1, skymap_2 in list(itertools.combinations(args.skymap, 2)):
             prefix_1 = get_filename_prefix(skymap_1)
             prefix_2 = get_filename_prefix(skymap_2)
 
-            opts = {"nbins": args.nbins}
+            opts = {}
             if args.verbose:
                 opts["verbose"] = ""
 
-            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[sampling_node_1, sampling_node_2], opts=opts, input_files={"posterior_samples": [path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix_1), path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix_2)]}, output_files={"output": path_prefix + compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
+            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": [path_prefix + prefix_1, path_prefix + prefix_2]}, output_files={"output": path_prefix + compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
 
 
     # Make the logs directory if it doesn't exist
