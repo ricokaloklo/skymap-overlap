@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import numpy as np
 import argparse
+import sys
 
-def compute_overlap(ra_samples_1, dec_samples_1, ra_samples_2, dec_samples_2, nbins=500):
+def compute_overlap_from_ra_dec(ra_samples_1, dec_samples_1, ra_samples_2, dec_samples_2, nbins=500):
     """
     Compute the overlap between skymap 1 and skymap 2 given the (RA, DEC) samples generated from
     the two probability skymaps p(\Omega) and q(\Omega)
@@ -19,26 +20,58 @@ def compute_overlap(ra_samples_1, dec_samples_1, ra_samples_2, dec_samples_2, nb
 
     return np.sum(np.sum(pdf_1*pdf_2))*d_ra*d_sin_dec
 
+def compute_overlap_from_healpix(skymap_1, skymap_2):
+    """
+    Compute the overlap between skymap_1 p(\Omega) and skymap_2 q(\Omega)
+    by \int_{whole sky} p(RA, DEC) q(RA, DEC) d \Omega = \int_{whole sky} p(RA, DEC) q(RA, DEC) d(RA) d(sin DEC)
+    which is simply \sum p_i q_i
+    """
+    assert len(skymap_1) == len(skymap_2), "The two probability skymaps have different resolutions"
+    return np.sum(skymap_1*skymap_2)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute overlap in sky given posterior samples of (RA, DEC)")
     parser.add_argument("--posterior_samples", action="append", type=str, metavar="PATH", help="Path to the two sets of posterior samples of (RA, DEC)")
-    parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples")
+    parser.add_argument("--skymaps", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
+    parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples if posterior samples are given")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
     parser.add_argument("--verbose", action="store_true", help="Be verbose")
     args = parser.parse_args()
 
-    assert len(args.posterior_samples) == 2, "Exactly two sets of posterior samples must be given"
-    
-    # Load posterior samples from files
-    dec_1, ra_1 = np.transpose(np.loadtxt(args.posterior_samples[0], skiprows=1))
-    dec_2, ra_2 = np.transpose(np.loadtxt(args.posterior_samples[1], skiprows=1))
+    if len(args.skymaps) == 2:
+        # Use skymaps whenever possible
+        if args.verbose:
+            print("Using inputs from --skymaps", file=sys.stderr)
+        import healpy as hp
+        import ligo.skymap.io
 
-    # Actually compute the overlap. the normalization needed and the normalized overlap
-    overlap = compute_overlap(ra_1, dec_1, ra_2, dec_2, nbins=args.nbins)
-    norm_1 = compute_overlap(ra_1, dec_1, ra_1, dec_1, nbins=args.nbins)
-    norm_2 = compute_overlap(ra_2, dec_2, ra_2, dec_2, nbins=args.nbins)
-    normalized_overlap = overlap/(np.sqrt(norm_1)*np.sqrt(norm_2))
+        # Load the skymaps
+        hpx_1, metadata_1 = ligo.skymap.io.fits.read_sky_map(args.skymaps[0])
+        hpx_2, metadata_2 = ligo.skymap.io.fits.read_sky_map(args.skymaps[1])
+
+        # Make sure that the skymaps are of the same resolution
+        nside_min = np.amin([hp.get_nside(hpx_1), hp.get_nside(hpx_2)])
+        hpx_1 = hp.pixelfunc.ud_grade(hpx_1, nside_min)
+        hpx_2 = hp.pixelfunc.ud_grade(hpx_2, nside_min)
+
+        overlap = compute_overlap_from_healpix(hpx_1, hpx_2)
+        norm_1 = compute_overlap_from_healpix(hpx_1, hpx_1)
+        norm_2 = compute_overlap_from_healpix(hpx_2, hpx_2)
+        normalized_overlap = overlap/(np.sqrt(norm_1)*np.sqrt(norm_2))
+    elif len(args.posterior_samples) == 2:
+        if args.verbose:
+            print("Using inputs from --posterior_samples", file=sys.stderr)
+        # Load posterior samples from files
+        dec_1, ra_1 = np.transpose(np.loadtxt(args.posterior_samples[0], skiprows=1))
+        dec_2, ra_2 = np.transpose(np.loadtxt(args.posterior_samples[1], skiprows=1))
+
+        # Actually compute the overlap. the normalization needed and the normalized overlap
+        overlap = compute_overlap_from_ra_dec(ra_1, dec_1, ra_2, dec_2, nbins=args.nbins)
+        norm_1 = compute_overlap_from_ra_dec(ra_1, dec_1, ra_1, dec_1, nbins=args.nbins)
+        norm_2 = compute_overlap_from_ra_dec(ra_2, dec_2, ra_2, dec_2, nbins=args.nbins)
+        normalized_overlap = overlap/(np.sqrt(norm_1)*np.sqrt(norm_2))
+    else:
+        print("Failed to load either skymaps or posterior samples", file=sys.stderr)
 
     if args.verbose:
         print("{},{},{},{}".format(normalized_overlap, norm_1, norm_2, overlap))
