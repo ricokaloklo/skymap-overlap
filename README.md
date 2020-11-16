@@ -31,7 +31,7 @@ To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one 
  
  3. 90% credible region (CR) overlap, which is defined as
  ```math
- \displaystyle\int_{\rm 90% CR} p(\Omega)q(\Omega) \; d\Omega
+ \displaystyle\int_{\rm 90\% CR} p(\Omega)q(\Omega) \; d\Omega
  ```
 
 Given two FITS skymaps, the simplest usage is
