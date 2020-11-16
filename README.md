@@ -17,10 +17,20 @@ pip install .
 
 ## Usage
 ### Computing the overlap between two skymaps
-To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one can use `compute_overlap` to compute the overlap $`\mathcal{F}`$, which is defined as
-```math
-\mathcal{F} = \frac{\displaystyle\int_{\rm all sky} p(\Omega)q(\Omega) \; d\Omega}{\sqrt{\displaystyle\int_{\rm all sky} p(\Omega)p(\Omega) \; d\Omega}\sqrt{\displaystyle\int_{\rm all sky} q(\Omega)q(\Omega) \; d\Omega}}
-```
+To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one can use `compute_overlap` to compute the overlap. Currently the script computes three overlap statistics:
+
+ 1. Posterior overlap, which is defined as
+ ```math
+ \displaystyle\int_{\rm all sky} p(\Omega)q(\Omega) \; d\Omega
+ ```
+
+ 2. Normalized posterior overlap, which is defined as
+ ```math
+ \frac{\displaystyle\int_{\rm all sky} p(\Omega)q(\Omega) \; d\Omega}{\sqrt{\displaystyle\int_{\rm all sky} p(\Omega)p(\Omega) \; d\Omega}\sqrt{\displaystyle\int_{\rm all sky} q(\Omega)q(\Omega) \; d\Omega}}
+ ```
+ 
+ 3. 90% credible region overlap
+
 Given two FITS skymaps, the simplest usage is
 ```
 compute_overlap --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz
@@ -29,7 +39,7 @@ compute_overlap --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz
 
 ### Computing the pairwise overlap between a batch of skymaps
 To compute the pairwise overlap between a batch of skymaps, you can use `compute_overlap_from_skymaps_pipe` which generates a DAG file
-for you to submit to a HTCondor-compatible cluster to draw (RA, DEC) samples from the probability skymaps and then calculate the overlap.
+for you to submit to a HTCondor-compatible cluster to calculate the overlap.
 The simplest usage is
 ```
 compute_overlap_from_skymaps_pipe --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz --skymap SKYMAP3.fits.gz
