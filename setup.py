@@ -27,7 +27,7 @@ setuptools.setup(
         "console_scripts": [
             "compute_overlap=skymap_overlap.compute_overlap:main",
             "download_skymap=skymap_overlap.download_skymap:main",
-            "compute_overlap_from_skymap_pipe=skymap_overlap.compute_overlap_from_skymap_pipe:main",
+            "compute_overlap_from_skymaps_pipe=skymap_overlap.compute_overlap_from_skymaps_pipe:main",
         ]
     },
     install_requires=[

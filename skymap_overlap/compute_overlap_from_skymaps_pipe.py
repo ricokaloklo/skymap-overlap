@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
-from gstlal import dagparts
+from pycondor import Job, Dagman
 import argparse
 import itertools
+import shutil
 
 def get_filename_prefix(filename):
     basename = os.path.basename(filename)
@@ -16,68 +17,55 @@ def get_filename_prefix(filename):
 
 
 def main():
-    parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps, and then compute pair-wise overlap")
+    parser = argparse.ArgumentParser(description = "Compute pair-wise overlap of a batch of skymaps")
     parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
-    parser.add_argument("--generate-samples", action="store_true", help="Generate posterior samples from skymaps")
-    parser.add_argument("--plot", action="store_true", help="Generate a corner plot of samples generated")
-    parser.add_argument("--nsamples", type=int, metavar="INT", default=20000, help="Number of samples to generate for each skymap")
-    parser.add_argument("--nbins", type=int, default=100, metavar="INT", help="Number of bins when histogramming the samples")
-    parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.uber.gstlaloffline", help="Accounting tag")
-    parser.add_argument("--absolute-path", action="store_true", help="Use absolute path instead of relative path")
+    parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.lensing.multi", help="Accounting tag")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
 
     args = parser.parse_args()
 
-    samples_out_str = "{prefix}_samples.dat"
+    compute_overlap_job_name = "compute_overlap"
     pairwise_overlap_out_str = "{prefix_1}_{prefix_2}_overlap.dat"
 
-    path_prefix = ""
-    if args.absolute_path:
-        path_prefix = "{}/".format(os.getcwd())
+    # Directories for HTCondor
+    try:
+        os.makedirs(compute_overlap_job_name)
+    except:
+        pass
+    error = os.path.abspath("logs")
+    output = os.path.abspath("logs")
+    log = os.path.abspath("logs")
+    submit = os.path.abspath("")
 
     # Create a DAG (but actually each node is independent of each other)
-    dag = dagparts.DAG("compute_overlap_from_skymaps")
-
-    sampling_job_name = "ra_dec_samples_from_skymap"
-    compute_overlap_job_name = "compute_overlap"
-
-    # Draw samples from skymaps
-    if args.generate_samples:
-        sampling_job = dagparts.DAGJob(sampling_job_name, condor_commands={"accounting_group":args.accounting_tag})
-        sampling_nodes = []
-        for skymap in args.skymap:
-            prefix = get_filename_prefix(skymap)
-            opts = {"nsamples": args.nsamples}
-            if args.plot:
-                opts["plot"] = "{}_corner_plot.pdf".format(prefix)
-            if args.verbose:
-                opts["verbose"] = ""
-        
-            sampling_nodes.append(dagparts.DAGNode(sampling_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": path_prefix + skymap}, output_files={"output": path_prefix + samples_out_str.format(prefix=sampling_job_name + "/" + prefix)}))
+    dag = Dagman(
+        name="dag_compute_overlap_from_skymaps",
+        submit=submit,
+    )
 
     # Compute overlap
     if len(args.skymap) >= 2:
         # At least two skymaps, now we can compute the pairwise overlap
-        compute_overlap_job = dagparts.DAGJob(compute_overlap_job_name, condor_commands={"accounting_group":args.accounting_tag})
-        pairwise_overlap_nodes = []
+        compute_overlap_job = Job(
+            name="job_"+compute_overlap_job_name,
+            executable=shutil.which("compute_overlap"),
+            universe="vanilla",
+            error=error,
+            output=output,
+            log=log,
+            dag=dag,
+            extra_lines = ["accounting_group = {}".format(args.accounting_tag)]
+        )
 
         for skymap_1, skymap_2 in list(itertools.combinations(args.skymap, 2)):
             prefix_1 = get_filename_prefix(skymap_1)
             prefix_2 = get_filename_prefix(skymap_2)
 
-            opts = {}
+            argument_str = ""
             if args.verbose:
-                opts["verbose"] = ""
+                argument_str += " --verbose"
+            argument_str += " --skymap " + os.path.abspath(skymap_1) + " --skymap " + os.path.abspath(skymap_2) + \
+                " --output " + os.path.abspath(os.path.join(compute_overlap_job_name, pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)))
+            compute_overlap_job.add_arg(argument_str, retry=3)
 
-            pairwise_overlap_nodes.append(dagparts.DAGNode(compute_overlap_job, dag, parent_nodes=[], opts=opts, input_files={"skymap": [path_prefix + skymap_1, path_prefix + skymap_2]}, output_files={"output": path_prefix + compute_overlap_job_name + "/" + pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)}))
-
-
-    # Make the logs directory if it doesn't exist
-    try:
-        os.mkdir("logs")
-    except:
-        pass
-
-    dag.write_sub_files()
-    dag.write_dag()
-    dag.write_script()
+    dag.build(fancyname=False)
