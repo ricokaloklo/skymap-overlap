@@ -18,9 +18,10 @@ def get_filename_prefix(filename):
 
 def main():
     parser = argparse.ArgumentParser(description = "Compute pair-wise overlap of a batch of skymaps")
-    parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
+    parser.add_argument("--skymap", metavar="PATH", action="append", help="A list of paths pointing to the probability skymaps")
     parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.lensing.multi", help="Accounting tag")
-    parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
+    parser.add_argument("--slurm", action="store_true", help="Run on a condor+slurm cluster")
+    parser.add_argument("--verbose", action="store_true", help="Be very verbose")
 
     args = parser.parse_args()
 
@@ -43,18 +44,24 @@ def main():
         submit=submit,
     )
 
+    universe = "vanilla"
+    extra_lines = ["accounting_group = {}".format(args.accounting_tag)]
+    if args.slurm:
+        universe = "grid"
+        extra_lines.append("grid_resource = batch slurm")
+
     # Compute overlap
     if len(args.skymap) >= 2:
         # At least two skymaps, now we can compute the pairwise overlap
         compute_overlap_job = Job(
             name="job_"+compute_overlap_job_name,
             executable=shutil.which("compute_overlap"),
-            universe="vanilla",
+            universe=universe,
             error=error,
             output=output,
             log=log,
             dag=dag,
-            extra_lines = ["accounting_group = {}".format(args.accounting_tag)]
+            extra_lines=extra_lines,
         )
 
         for skymap_1, skymap_2 in list(itertools.combinations(args.skymap, 2)):
