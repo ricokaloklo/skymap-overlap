@@ -105,6 +105,3 @@ def main():
             f.write(out_str)
     else:
         print(out_str)
-
-if __name__ == "__main__":
-    main()

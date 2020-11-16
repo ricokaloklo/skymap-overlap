@@ -15,7 +15,7 @@ def get_filename_prefix(filename):
     return os.path.splitext(basename)[0]
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description = "Generate samples of (RA, DEC) from the skymaps, and then compute pair-wise overlap")
     parser.add_argument("--skymap", metavar="PATH", action="append", help = "A list of paths pointing to the probability skymaps")
     parser.add_argument("--generate-samples", action="store_true", help="Generate posterior samples from skymaps")

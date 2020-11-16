@@ -22,7 +22,7 @@ def download_skymap(id, db, args, use_bayestar_only=False):
 	outfile.write(r.read())
 	outfile.close()
 
-if __name__ == "__main__":
+def main():
 	parser = argparse.ArgumentParser(description = "Download skymaps from a list of events")
 	parser.add_argument("event", nargs="+", help = "A list of gravitational-wave events, can be either GID for GW event or SID for superevent")
 	parser.add_argument("--bayestar", action="store_true", help="Use bayestar skymap only")

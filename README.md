@@ -3,21 +3,17 @@
 Compute the overlap between two skymaps
 
 ## Requirements
- * Python2.7/Python3.X
- * emcee==2.2.1
  * scipy-stack (numpy, scipy, matplotlib, pandas)
  * astropy
  * healpy
  * ligo.skymap (only supports Python3.X)
- * lal
  * ligo-gracedb (for batch downloading skymaps)
- * corner (for generating corner plots)
- * gstlal (for generating dag files, where the master version supports Python3 now)*
-
-*If you are using LDG head-nodes, the gstlal installed system-wide will work just fine
+ * pycondor
 
 ## Installation
-Simply git clone this repository. Add ${INSTALLATION_PATH}/skymap-overlap/ to the environment variable ${PATH}.
+```bash
+pip install .
+```
 
 ## Usage
 ### Computing the overlap between two skymaps
@@ -25,22 +21,11 @@ To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one 
 ```math
 \mathcal{F} = \frac{\displaystyle\int_{\rm all sky} p(\Omega)q(\Omega) \; d\Omega}{\sqrt{\displaystyle\int_{\rm all sky} p(\Omega)p(\Omega) \; d\Omega}\sqrt{\displaystyle\int_{\rm all sky} q(\Omega)q(\Omega) \; d\Omega}}
 ```
-1. Given two FITS skymaps, the simplest usage is
+Given two FITS skymaps, the simplest usage is
 ```
 compute_overlap --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz
 ```
-2. Given the samples drawn from the two skymaps (e.g. from `ra_dec_samples_from_skymap`), the simplest usage is
-```
-compute_overlap --posterior_samples SAMPLES_FROM_SKYMAP1.dat --posterior_samples SAMPLES_FROM_SKYMAP2.dat
-```
 
-### Drawing (RA, DEC) samples from a probability skymap
-To draw samples of the right ascension (RA) and declination (DEC) from a probability skymap (in a fits file), one can use
-`ra_dec_samples_from_skymap` which uses the PTMCMC sampling algorithm in `emcee` to draw samples. The simplest usage is
-```
-ra_dec_samples_from_skymap --skymap SKYMAP.fits.gz
-```
-It is output a tab-delimited text file containing the drawn samples.
 
 ### Computing the pairwise overlap between a batch of skymaps
 To compute the pairwise overlap between a batch of skymaps, you can use `compute_overlap_from_skymaps_pipe` which generates a DAG file
@@ -49,8 +34,7 @@ The simplest usage is
 ```
 compute_overlap_from_skymaps_pipe --skymap SKYMAP1.fits.gz --skymap SKYMAP2.fits.gz --skymap SKYMAP3.fits.gz
 ```
-so on and so forth. There are also other options for example the accounting tag (if you are running on LDG), and the number of samples
-you want to draw using MCMC sampling.
+so on and so forth. There are also other options for example the accounting tag (if you are running on LDG).
 
 ### Batch downloading skymaps from GraceDB
 You can use `download_skymap` to download skymaps from GraceDB given the GID or SID. The simplest usage is
