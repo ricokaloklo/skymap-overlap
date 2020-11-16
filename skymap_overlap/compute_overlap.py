@@ -72,6 +72,7 @@ def main():
     parser = argparse.ArgumentParser(description="Compute overlap in sky given two FITS skymaps")
     parser.add_argument("--skymap", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
+    parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
     args = parser.parse_args()
 
     if args.skymap is None:
@@ -89,12 +90,17 @@ def main():
     ]
     overlap_values = []
 
+    if args.verbose:
+        print("Loading {} and {}".format(*args.skymap), file=sys.stdout)
+
     skymap_1, skymap_2 = enforce_same_resolution(
         read_skymap(args.skymap[0]),
         read_skymap(args.skymap[1])
     )
 
     for stat in statistics:
+        if args.verbose:
+            print("Calculating {} statistic".format(stat.name), file=sys.stdout)
         overlap = stat.compute_overlap(skymap_1, skymap_2)
         overlap_values.append(overlap)
 
