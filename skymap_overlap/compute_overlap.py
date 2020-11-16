@@ -5,6 +5,7 @@ import healpy as hp
 import ligo.skymap.io
 import ligo.skymap.postprocess
 import argparse
+import sys
 
 class OverlapStatistic(object):
     def __init__(self):
@@ -104,4 +105,4 @@ def main():
         with open(args.output, "w") as f:
             f.write(out_str)
     else:
-        print(out_str)
+        print(out_str, file=sys.stderr)
