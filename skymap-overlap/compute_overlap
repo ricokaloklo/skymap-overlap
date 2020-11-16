@@ -1,86 +1,110 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import numpy as np
+import healpy as hp
+import ligo.skymap.io
+import ligo.skymap.postprocess
 import argparse
-import sys
 
-def compute_overlap_from_ra_dec(ra_samples_1, dec_samples_1, ra_samples_2, dec_samples_2, nbins=500):
-    """
-    Compute the overlap between skymap 1 and skymap 2 given the (RA, DEC) samples generated from
-    the two probability skymaps p(\Omega) and q(\Omega)
-    by \int_{whole sky} p(RA, DEC) q(RA, DEC) d \Omega = \int_{whole sky} p(RA, DEC) q(RA, DEC) d(RA) d(sin DEC)
-    """
-    assert nbins > 1, "Number of bins must be greater than 1"
-    ra_grid = np.linspace(0, 2.0*np.pi, num=nbins)
-    sin_dec_grid = np.linspace(-1, 1, num=nbins)
-    d_ra = (ra_grid[-1] - ra_grid[0])/nbins
-    d_sin_dec = (sin_dec_grid[-1] - sin_dec_grid[0])/nbins
+class OverlapStatistic(object):
+    def __init__(self):
+        self.name = "overlap"
 
-    pdf_1, xedges_1, yedges_1 = np.histogram2d(ra_samples_1, np.sin(dec_samples_1), bins=(ra_grid, sin_dec_grid), normed=True)
-    pdf_2, xedges_2, yedges_2 = np.histogram2d(ra_samples_2, np.sin(dec_samples_2), bins=(ra_grid, sin_dec_grid), normed=True)
+    @staticmethod
+    def compute_overlap(*skymaps):
+        return 0.0
 
-    return np.sum(np.sum(pdf_1*pdf_2))*d_ra*d_sin_dec
+class PosteriorOverlap(OverlapStatistic):
+    def __init__(self):
+        self.name = "posterior_overlap"
 
-def compute_overlap_from_healpix(skymap_1, skymap_2):
-    """
-    Compute the overlap between skymap_1 p(\Omega) and skymap_2 q(\Omega)
-    by \int_{whole sky} p(RA, DEC) q(RA, DEC) d \Omega = \int_{whole sky} p(RA, DEC) q(RA, DEC) d(RA) d(sin DEC)
-    which is simply \sum p_i q_i
-    """
-    assert len(skymap_1) == len(skymap_2), "The two probability skymaps have different resolutions"
-    return np.sum(skymap_1*skymap_2)
+    @staticmethod
+    def compute_overlap(*skymaps):
+        # Simply sum over all pixels
+        return np.sum(np.multiply(*skymaps))
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Compute overlap in sky given posterior samples of (RA, DEC)")
-    parser.add_argument("--posterior_samples", action="append", type=str, metavar="PATH", help="Path to the two sets of posterior samples of (RA, DEC)")
+class NormalizedPosteriorOverlap(OverlapStatistic):
+    def __init__(self):
+        self.name = "normalized_posterior_overlap"
+
+    @staticmethod
+    def compute_overlap(*skymaps):
+        unnormalized_overlap = PosteriorOverlap.compute_overlap(*skymaps)
+        normalization = np.prod([np.sqrt(PosteriorOverlap.compute_overlap(m, m)) for m in skymaps])
+        return unnormalized_overlap/normalization
+
+class CredibleRegionOverlap(OverlapStatistic):
+    def __init__(self, percent):
+        assert 0 < percent < 100, "percent must be between 0 and 100"
+        self.name = "{percent}%_credible_region_overlap".format(percent=percent)
+        self.percent = percent
+
+    @staticmethod
+    def mask_skymap(skymap, percent):
+        masked_skymap = np.zeros_like(skymap)
+        masked_skymap[ligo.skymap.postprocess.util.find_greedy_credible_levels(skymap) <= percent/100.] = 1.0
+        return masked_skymap
+
+    @staticmethod
+    def count_masked_pixel(skymap):
+        return len(skymap[skymap == 1.0])
+
+    def compute_overlap(self, *skymaps):
+        masked_skymaps = [self.mask_skymap(m, self.percent) for m in skymaps]
+        joint_masked_skymaps = np.multiply(*masked_skymaps)
+        return self.count_masked_pixel(joint_masked_skymaps)/np.amin([self.count_masked_pixel(m) for m in masked_skymaps])
+
+
+def read_skymap(filename):
+    hpx, _ = ligo.skymap.io.fits.read_sky_map(filename)
+    return hpx
+
+def enforce_same_resolution(*skymaps):
+    skymaps = list(skymaps)
+    nside_min = np.amin([hp.get_nside(hpx) for hpx in skymaps])
+    for i in range(len(skymaps)):
+        skymaps[i] = ligo.skymap.postprocess.util.smooth_ud_grade(skymaps[i], nside_min)
+        
+    return skymaps
+
+def main():
+    parser = argparse.ArgumentParser(description="Compute overlap in sky given two FITS skymaps")
     parser.add_argument("--skymap", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
-    parser.add_argument("--nbins", type=int, default=500, metavar="INT", help="Number of bins when histogramming the samples if posterior samples are given")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
-    parser.add_argument("--verbose", action="store_true", help="Be verbose")
     args = parser.parse_args()
 
-    if len(args.skymap) == 2:
-        # Use skymaps whenever possible
-        if args.verbose:
-            print("Using inputs from --skymaps", file=sys.stderr)
-        import healpy as hp
-        
-        try:
-            # Load the skymaps using ligo.skymap if available
-            import ligo.skymap.io
-            hpx_1, metadata_1 = ligo.skymap.io.fits.read_sky_map(args.skymap[0])
-            hpx_2, metadata_2 = ligo.skymap.io.fits.read_sky_map(args.skymap[1])
-        except:
-            hpx_1 = hp.read_map(args.skymap[0], verbose=args.verbose)
-            hpx_2 = hp.read_map(args.skymap[1], verbose=args.verbose)
+    if args.skymap is None:
+        args.skymap = []
+    assert len(args.skymap) == 2, "Currently the script only supports computing the overlap between 2 skymaps. {} given.".format(len(args.skymap))
 
-        # Make sure that the skymaps are of the same resolution
-        nside_min = np.amin([hp.get_nside(hpx_1), hp.get_nside(hpx_2)])
-        hpx_1 = hp.pixelfunc.ud_grade(hpx_1, nside_min)
-        hpx_2 = hp.pixelfunc.ud_grade(hpx_2, nside_min)
+    posterior_overlap = PosteriorOverlap()
+    normalized_posterior_overlap = NormalizedPosteriorOverlap()
+    credible_region_overlap = CredibleRegionOverlap(90) # 90% CR overlap
 
-        overlap = compute_overlap_from_healpix(hpx_1, hpx_2)
-        norm_1 = compute_overlap_from_healpix(hpx_1, hpx_1)
-        norm_2 = compute_overlap_from_healpix(hpx_2, hpx_2)
-        normalized_overlap = overlap/(np.sqrt(norm_1)*np.sqrt(norm_2))
-    elif len(args.posterior_samples) == 2:
-        if args.verbose:
-            print("Using inputs from --posterior_samples", file=sys.stderr)
-        # Load posterior samples from files
-        dec_1, ra_1 = np.transpose(np.loadtxt(args.posterior_samples[0], skiprows=1))
-        dec_2, ra_2 = np.transpose(np.loadtxt(args.posterior_samples[1], skiprows=1))
+    statistics = [
+        posterior_overlap,
+        normalized_posterior_overlap,
+        credible_region_overlap,
+    ]
+    overlap_values = []
 
-        # Actually compute the overlap. the normalization needed and the normalized overlap
-        overlap = compute_overlap_from_ra_dec(ra_1, dec_1, ra_2, dec_2, nbins=args.nbins)
-        norm_1 = compute_overlap_from_ra_dec(ra_1, dec_1, ra_1, dec_1, nbins=args.nbins)
-        norm_2 = compute_overlap_from_ra_dec(ra_2, dec_2, ra_2, dec_2, nbins=args.nbins)
-        normalized_overlap = overlap/(np.sqrt(norm_1)*np.sqrt(norm_2))
-    else:
-        print("Failed to load either skymaps or posterior samples", file=sys.stderr)
+    skymap_1, skymap_2 = enforce_same_resolution(
+        read_skymap(args.skymap[0]),
+        read_skymap(args.skymap[1])
+    )
 
-    if args.verbose or args.output is None:
-        print("{},{},{},{}".format(normalized_overlap, norm_1, norm_2, overlap))
-    
+    for stat in statistics:
+        overlap = stat.compute_overlap(skymap_1, skymap_2)
+        overlap_values.append(overlap)
+
+    out_str = ",".join([stat.name for stat in statistics]) + "\n"
+    out_str += ",".join(["{}".format(v) for v in overlap_values])
+
     if args.output is not None:
-        # Save the output (just a number really)
-        np.savetxt(args.output, np.atleast_1d(normalized_overlap))
+        with open(args.output, "w") as f:
+            f.write(out_str)
+    else:
+        print(out_str)
+
+if __name__ == "__main__":
+    main()
