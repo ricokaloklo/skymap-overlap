@@ -4,8 +4,12 @@ import numpy as np
 import healpy as hp
 import ligo.skymap.io
 import ligo.skymap.postprocess
+from ligo.skymap.postprocess.crossmatch import crossmatch
+from astropy.coordinates import SkyCoord
 import argparse
 import sys
+import os
+import bilby
 
 class OverlapStatistic(object):
     def __init__(self):
@@ -55,6 +59,36 @@ class CredibleRegionOverlap(OverlapStatistic):
         joint_masked_skymaps = np.multiply(*masked_skymaps)
         return self.count_masked_pixel(joint_masked_skymaps)/np.amin([self.count_masked_pixel(m) for m in masked_skymaps])
 
+class CrossHPDStatistic(OverlapStatistic):
+    def __init__(self, skymap_path1, skymap_path2):
+        self.name = "cross_hpd_statistic"
+        self.path1 = os.path.dirname(skymap_path1)
+        self.json_name1 = os.path.basename(skymap_path1).split(".fits")[0]
+        self.path2 = os.path.dirname(skymap_path2)
+        self.json_name2 = os.path.basename(skymap_path2).split(".fits")[0]
+        self.skymap1 = ligo.skymap.io.fits.read_sky_map(skymap_path1,moc=True)
+        self.skymap2 = ligo.skymap.io.fits.read_sky_map(skymap_path2,moc=True)
+
+    @staticmethod
+    def get_ra_dec_from_json(path, name):
+        result = bilby.result.read_in_result(path+'/'+name+'.json')
+        result.posterior['log_posterior'] = result.posterior['log_likelihood'] + result.posterior['log_prior']
+        ra,dec = result.posterior.sort_values(by="log_posterior").iloc[-1][['ra','dec']]
+        return ra,dec
+
+    def compute_overlap(self,*skymaps):
+        ra, dec = self.get_ra_dec_from_json(self.path1,self.json_name1)
+        coord = SkyCoord(ra,dec,unit="rad")
+        result = crossmatch(self.skymap1,coord)
+        searched_prob_1 = result.searched_prob
+        ra, dec = self.get_ra_dec_from_json(self.path2,self.json_name2)
+        coord = SkyCoord(ra,dec,unit="rad")
+        result = crossmatch(self.skymap2,coord)
+        searched_prob_2 = result.searched_prob
+        return np.max([1-searched_prob_1, 1-searched_prob_2])
+
+
+
 
 def read_skymap(filename):
     hpx, _ = ligo.skymap.io.fits.read_sky_map(filename)
@@ -82,11 +116,13 @@ def main():
     posterior_overlap = PosteriorOverlap()
     normalized_posterior_overlap = NormalizedPosteriorOverlap()
     credible_region_overlap = CredibleRegionOverlap(90) # 90% CR overlap
+    cross_hpd_statistic = CrossHPDStatistic(args.skymap[0],args.skymap[1])
 
     statistics = [
         posterior_overlap,
         normalized_posterior_overlap,
         credible_region_overlap,
+        cross_hpd_statistic,
     ]
     overlap_values = []
 
@@ -112,3 +148,5 @@ def main():
             f.write(out_str)
     else:
         print(out_str, file=sys.stderr)
+
+main()
