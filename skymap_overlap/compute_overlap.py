@@ -4,12 +4,10 @@ import numpy as np
 import healpy as hp
 import ligo.skymap.io
 import ligo.skymap.postprocess
-from ligo.skymap.postprocess.crossmatch import crossmatch
-from astropy.coordinates import SkyCoord
+from ligo.skymap.bayestar import rasterize
 import argparse
 import sys
 import os
-import bilby
 
 class OverlapStatistic(object):
     def __init__(self):
@@ -60,30 +58,27 @@ class CredibleRegionOverlap(OverlapStatistic):
         return self.count_masked_pixel(joint_masked_skymaps)/np.amin([self.count_masked_pixel(m) for m in masked_skymaps])
 
 class CrossHPDStatistic(OverlapStatistic):
-    def __init__(self, skymap_path1, skymap_path2):
+    def __init__(self):
         self.name = "cross_hpd_statistic"
-        self.path1 = os.path.dirname(skymap_path1)
-        self.json_name1 = os.path.basename(skymap_path1).split(".fits")[0]
-        self.path2 = os.path.dirname(skymap_path2)
-        self.json_name2 = os.path.basename(skymap_path2).split(".fits")[0]
-        self.skymap1 = ligo.skymap.io.fits.read_sky_map(skymap_path1,moc=True)
-        self.skymap2 = ligo.skymap.io.fits.read_sky_map(skymap_path2,moc=True)
+
 
     @staticmethod
-    def get_ra_dec_from_json(path, name):
-        result = bilby.result.read_in_result(path+'/'+name+'.json')
-        result.posterior['log_posterior'] = result.posterior['log_likelihood'] + result.posterior['log_prior']
-        ra,dec = result.posterior.sort_values(by="log_posterior").iloc[-1][['ra','dec']]
-        return ra,dec
+    def get_ra_dec_from_skymap(skymap):
+        index_of_max = np.argmax(skymap)
+        nside = hp.npix2nside(len(skymap))
+        theta, phi = hp.pix2ang(nside, index_of_max, nest=True)
+        return phi,np.pi/2-theta
 
-    def compute_overlap(self,*skymaps):
-        ra, dec = self.get_ra_dec_from_json(self.path1,self.json_name1)
+    def compute_overlap(self,skymap1,skymap2,single_skymap1,single_skymap2):
+        from ligo.skymap.postprocess.crossmatch import crossmatch
+        from astropy.coordinates import SkyCoord
+        ra, dec = self.get_ra_dec_from_skymap(single_skymap1)
         coord = SkyCoord(ra,dec,unit="rad")
-        result = crossmatch(self.skymap1,coord)
+        result = crossmatch(skymap2,coord)
         searched_prob_1 = result.searched_prob
-        ra, dec = self.get_ra_dec_from_json(self.path2,self.json_name2)
+        ra, dec = self.get_ra_dec_from_skymap(single_skymap2)
         coord = SkyCoord(ra,dec,unit="rad")
-        result = crossmatch(self.skymap2,coord)
+        result = crossmatch(skymap1,coord)
         searched_prob_2 = result.searched_prob
         return np.max([1-searched_prob_1, 1-searched_prob_2])
 
@@ -116,7 +111,7 @@ def main():
     posterior_overlap = PosteriorOverlap()
     normalized_posterior_overlap = NormalizedPosteriorOverlap()
     credible_region_overlap = CredibleRegionOverlap(90) # 90% CR overlap
-    cross_hpd_statistic = CrossHPDStatistic(args.skymap[0],args.skymap[1])
+    cross_hpd_statistic = CrossHPDStatistic()
 
     statistics = [
         posterior_overlap,
@@ -129,15 +124,22 @@ def main():
     if args.verbose:
         print("Loading {} and {}".format(*args.skymap), file=sys.stdout)
 
+    skymap_1_multi_order = ligo.skymap.io.fits.read_sky_map(args.skymap[0], moc=True)
+    skymap_2_multi_order = ligo.skymap.io.fits.read_sky_map(args.skymap[1], moc=True)
+    
+
     skymap_1, skymap_2 = enforce_same_resolution(
-        read_skymap(args.skymap[0]),
-        read_skymap(args.skymap[1])
+        rasterize(skymap_1_multi_order)["PROB"].data,
+        rasterize(skymap_2_multi_order)["PROB"].data
     )
 
     for stat in statistics:
         if args.verbose:
             print("Calculating {} statistic".format(stat.name), file=sys.stdout)
-        overlap = stat.compute_overlap(skymap_1, skymap_2)
+        if type(stat) == CrossHPDStatistic:
+            overlap = stat.compute_overlap(skymap_1_multi_order,skymap_2_multi_order,skymap_1, skymap_2)
+        else:
+            overlap = stat.compute_overlap(skymap_1, skymap_2)
         overlap_values.append(overlap)
 
     out_str = ",".join([stat.name for stat in statistics]) + "\n"
