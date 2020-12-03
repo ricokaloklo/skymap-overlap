@@ -21,6 +21,7 @@ def main():
     parser.add_argument("--skymap", metavar="PATH", action="append", help="A list of paths pointing to the probability skymaps")
     parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.lensing.multi", help="Accounting tag")
     parser.add_argument("--slurm", action="store_true", help="Run on a condor+slurm cluster")
+    parser.add_argument("--plot", action = "store_true", help = "Visualize the skymaps")
     parser.add_argument("--verbose", action="store_true", help="Be very verbose")
 
     args = parser.parse_args()
@@ -71,6 +72,8 @@ def main():
             argument_str = ""
             if args.verbose:
                 argument_str += " --verbose"
+            if args.plot:
+                argument_str += " --plot"
             argument_str += " --skymap " + os.path.abspath(skymap_1) + " --skymap " + os.path.abspath(skymap_2) + \
                 " --output " + os.path.abspath(os.path.join(compute_overlap_job_name, pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)))
             compute_overlap_job.add_arg(argument_str, retry=3)
