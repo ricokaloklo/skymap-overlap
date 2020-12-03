@@ -4,6 +4,13 @@ import numpy as np
 import healpy as hp
 import ligo.skymap.io
 import ligo.skymap.postprocess
+import ligo.skymap.plot
+import matplotlib as mpl
+mpl.use("Agg")
+from matplotlib import pyplot as plt
+from matplotlib import cm as cm
+from matplotlib.colors import ListedColormap
+import matplotlib.patches as mpatches
 from ligo.skymap.bayestar import rasterize
 import argparse
 import sys
@@ -83,8 +90,6 @@ class CrossHPDStatistic(OverlapStatistic):
         return np.max([1-searched_prob_1, 1-searched_prob_2])
 
 
-
-
 def read_skymap(filename):
     hpx, _ = ligo.skymap.io.fits.read_sky_map(filename)
     return hpx
@@ -97,10 +102,41 @@ def enforce_same_resolution(*skymaps):
         
     return skymaps
 
+def plot_skymaps(skymap_1, skymap_2, label_1="", label_2="", filename="skymaps.pdf"):
+    assert len(skymap_1) == len(skymap_2), "The two skymaps should have the same resolution."
+    area_per_pixel = hp.nside2pixarea(hp.npix2nside(len(skymap_1)), degrees=True)
+
+    fig = plt.figure()
+    ax = plt.axes(projection='astro hours mollweide')
+    ax.grid()
+
+    # Plot probability per sq. deg
+    skymap_1_persqdeg = skymap_1/area_per_pixel
+    skymap_2_persqdeg = skymap_2/area_per_pixel
+
+    cylon = cm.get_cmap('cylon')
+    # Make custom colormap
+    viridis = cm.get_cmap('viridis')
+    viridis_transparent = viridis(np.arange(viridis.N))
+    viridis_transparent[:,-1] = np.linspace(0, 1, viridis.N)
+    viridis_transparent = ListedColormap(viridis_transparent)
+
+    im_1 = ax.imshow_hpx((skymap_1_persqdeg, 'ICRS'), nested=True, vmin=0., vmax=skymap_1_persqdeg.max(), cmap='cylon')
+    im_2 = ax.imshow_hpx((skymap_2_persqdeg, 'ICRS'), nested=True, vmin=0., vmax=skymap_2_persqdeg.max(), cmap=viridis_transparent)
+
+    # Fake the legend
+    # Create a patch (proxy artist) for every color
+    patches = [mpatches.Patch(color=im_1.cmap(10), label=label_1), mpatches.Patch(color=im_2.cmap(100), label=label_2)]
+    plt.legend(handles=patches, bbox_to_anchor=(0.25, 1.2), loc=1, borderaxespad=0.)
+
+    plt.savefig(filename)
+    plt.close()
+
 def main():
     parser = argparse.ArgumentParser(description="Compute overlap in sky given two FITS skymaps")
     parser.add_argument("--skymap", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
+    parser.add_argument("--plot", action = "store_true", help = "Visualize the skymaps")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
     args = parser.parse_args()
 
@@ -150,5 +186,14 @@ def main():
             f.write(out_str)
     else:
         print(out_str, file=sys.stderr)
+
+    if args.plot:
+        skymap_1_label = os.path.basename(args.skymap[0]).split(".fits")[0]
+        skymap_2_label = os.path.basename(args.skymap[1]).split(".fits")[0]
+        if args.output is not None and args.output.endswith(".dat"):
+            out_plot_filename = args.output.replace(".dat", ".pdf")
+        else:
+            out_plot_filename = "skymaps.pdf"
+        plot_skymaps(skymap_1, skymap_2, skymap_1_label, skymap_2_label, out_plot_filename)
 
 main()
