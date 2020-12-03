@@ -14,9 +14,14 @@ def download_skymap(id, db, args, use_bayestar_only=False):
 		else:
 			raise TypeError
 	except:
-		r = db.files(id, "bayestar.fits.gz")
-		if args.verbose:
-			print("Using Bayestar skymap for {0}".format(id), file=sys.stderr)
+		try:
+			r = db.files(id, "bayestar.fits.gz")
+			if args.verbose:
+				print("Using Bayestar skymap for {0}".format(id), file=sys.stderr)
+		except:
+			r = db.files(id, "subthreshold.bayestar.fits.gz")
+			if args.verbose:
+				print("Using subthreshold Bayestar skymap for {0}".format(id), file=sys.stderr)
 
 	outfile = open("{0}_skymap.fits.gz".format(id), "wb")
 	outfile.write(r.read())
