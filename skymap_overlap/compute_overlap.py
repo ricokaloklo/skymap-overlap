@@ -121,13 +121,13 @@ def plot_skymaps(skymap_1, skymap_2, label_1="", label_2="", filename="skymaps.p
     viridis_transparent[:,-1] = np.linspace(0, 1, viridis.N)
     viridis_transparent = ListedColormap(viridis_transparent)
 
-    im_1 = ax.imshow_hpx((skymap_1_persqdeg, 'ICRS'), nested=True, vmin=0., vmax=skymap_1_persqdeg.max(), cmap='cylon')
-    im_2 = ax.imshow_hpx((skymap_2_persqdeg, 'ICRS'), nested=True, vmin=0., vmax=skymap_2_persqdeg.max(), cmap=viridis_transparent)
+    im_1 = ax.imshow_hpx((skymap_1_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_1_persqdeg.max(), cmap='cylon')
+    im_2 = ax.imshow_hpx((skymap_2_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_2_persqdeg.max(), cmap=viridis_transparent)
 
     # Fake the legend
     # Create a patch (proxy artist) for every color
     patches = [mpatches.Patch(color=im_1.cmap(10), label=label_1), mpatches.Patch(color=im_2.cmap(100), label=label_2)]
-    plt.legend(handles=patches, bbox_to_anchor=(0.25, 1.2), loc=1, borderaxespad=0.)
+    plt.legend(handles=patches, bbox_to_anchor=(0.0, 1.2), loc='center left', borderaxespad=0.)
 
     plt.savefig(filename)
     plt.close()
