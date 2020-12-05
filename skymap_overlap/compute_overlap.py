@@ -162,11 +162,10 @@ def main():
 
     skymap_1_multi_order = ligo.skymap.io.fits.read_sky_map(args.skymap[0], moc=True)
     skymap_2_multi_order = ligo.skymap.io.fits.read_sky_map(args.skymap[1], moc=True)
-    
 
     skymap_1, skymap_2 = enforce_same_resolution(
-        rasterize(skymap_1_multi_order)["PROB"].data,
-        rasterize(skymap_2_multi_order)["PROB"].data
+        read_skymap(args.skymap[0]),
+        read_skymap(args.skymap[1])
     )
 
     for stat in statistics:
