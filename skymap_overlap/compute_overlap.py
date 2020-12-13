@@ -73,7 +73,7 @@ class CrossHPDStatistic(OverlapStatistic):
     def get_ra_dec_from_skymap(skymap):
         index_of_max = np.argmax(skymap)
         nside = hp.npix2nside(len(skymap))
-        theta, phi = hp.pix2ang(nside, index_of_max, nest=True)
+        theta, phi = hp.pix2ang(nside, index_of_max)
         return phi,np.pi/2-theta
 
     def compute_overlap(self,skymap1,skymap2,single_skymap1,single_skymap2):
