@@ -31,7 +31,7 @@ To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one 
  
  3. 90% credible region (CR) overlap, which is defined as
  ```math
- \frac{\displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ p(\Omega)q(\Omega) \right] d\Omega}{{\rm min} (\displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ p(\Omega) \right] \; d\Omega , \displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ q(\Omega) \right] \; d\Omega)},
+ \frac{\displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ p(\Omega)\right] \mathbf{1}_{\rm 90\% CR} \left[ q(\Omega) \right] d\Omega}{{\rm min} (\displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ p(\Omega) \right] \; d\Omega , \displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ q(\Omega) \right] \; d\Omega)},
  ```
  where $`\mathbf{1}`$ is the indicator function.
 
