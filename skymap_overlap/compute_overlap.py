@@ -128,7 +128,7 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
     ax.grid()
 
     ims = [ax.imshow_hpx((skymap_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_persqdeg.max(), cmap=cmap_instances[idx]) for idx, skymap_persqdeg in enumerate(skymaps_persqdeg)]
-    patches = [mpatches.Patch(color=ims[idx].cmap(10**idx), label=label) for idx, label in enumerate(labels)]
+    patches = [mpatches.Patch(color=ims[idx].cmap(10**(idx+1)), label=label) for idx, label in enumerate(labels)]
     plt.legend(handles=patches, bbox_to_anchor=(0.0, 1.2), loc='center left', borderaxespad=0.)
 
     plt.savefig(filename)
