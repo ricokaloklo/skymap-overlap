@@ -102,31 +102,33 @@ def enforce_same_resolution(*skymaps):
         
     return skymaps
 
-def plot_skymaps(skymap_1, skymap_2, label_1="", label_2="", filename="skymaps.pdf"):
-    assert len(skymap_1) == len(skymap_2), "The two skymaps should have the same resolution."
-    area_per_pixel = hp.nside2pixarea(hp.npix2nside(len(skymap_1)), degrees=True)
+def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
+    # Sanity check
+    assert len(skymaps) == len(labels)
+    assert len(skymaps) == len(cmaps)
+
+    # Prepare the custom cmap instances
+    cmap_instances = []
+    for idx, cmap in enumerate(cmaps):
+        cmap = cm.get_cmap(cmap)
+        if idx == 0:
+            cmap_instances.append(cmap)
+
+        cmap_transparent = cmap(np.arange(cmap.N))
+        cmap_transparent[:,-1] = np.linspace(0, 1, cmap.N)
+        cmap_transparent = ListedColormap(cmap_transparent)
+        cmap_instances.append(cmap_transparent)
+
+    skymaps = enforce_same_resolution(*skymaps)
+    area_per_pixel = hp.nside2pixarea(hp.npix2nside(len(skymaps[0])), degrees=True)
+    skymaps_persqdeg = [skymap/area_per_pixel for skymap in skymaps]
 
     fig = plt.figure()
     ax = plt.axes(projection='astro hours mollweide')
     ax.grid()
 
-    # Plot probability per sq. deg
-    skymap_1_persqdeg = skymap_1/area_per_pixel
-    skymap_2_persqdeg = skymap_2/area_per_pixel
-
-    cylon = cm.get_cmap('cylon')
-    # Make custom colormap
-    viridis = cm.get_cmap('viridis')
-    viridis_transparent = viridis(np.arange(viridis.N))
-    viridis_transparent[:,-1] = np.linspace(0, 1, viridis.N)
-    viridis_transparent = ListedColormap(viridis_transparent)
-
-    im_1 = ax.imshow_hpx((skymap_1_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_1_persqdeg.max(), cmap='cylon')
-    im_2 = ax.imshow_hpx((skymap_2_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_2_persqdeg.max(), cmap=viridis_transparent)
-
-    # Fake the legend
-    # Create a patch (proxy artist) for every color
-    patches = [mpatches.Patch(color=im_1.cmap(10), label=label_1), mpatches.Patch(color=im_2.cmap(100), label=label_2)]
+    ims = [ax.imshow_hpx((skymap_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_persqdeg.max(), cmap=cmap_instances[idx]) for idx, skymap_persqdeg in enumerate(skymaps_persqdeg)]
+    patches = [mpatches.Patch(color=ims[idx].cmap(10**idx), label=label) for idx, label in enumerate(labels)]
     plt.legend(handles=patches, bbox_to_anchor=(0.0, 1.2), loc='center left', borderaxespad=0.)
 
     plt.savefig(filename)
@@ -193,4 +195,5 @@ def main():
             out_plot_filename = args.output.replace(".dat", ".pdf")
         else:
             out_plot_filename = "skymaps.pdf"
-        plot_skymaps(skymap_1, skymap_2, skymap_1_label, skymap_2_label, out_plot_filename)
+        plot_skymaps([skymap_1, skymap_2], [skymap_1_label, skymap_2_label], ["cylon", "viridis"], out_plot_filename)
+
