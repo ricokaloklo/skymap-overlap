@@ -194,5 +194,3 @@ def main():
         else:
             out_plot_filename = "skymaps.pdf"
         plot_skymaps(skymap_1, skymap_2, skymap_1_label, skymap_2_label, out_plot_filename)
-
-main()
