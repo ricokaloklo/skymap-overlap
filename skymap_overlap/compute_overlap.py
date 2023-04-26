@@ -123,17 +123,16 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
         cmap_instances.append(cmap_transparent)
 
     skymaps = enforce_same_resolution(*skymaps)
-    area_per_pixel = hp.nside2pixarea(hp.npix2nside(len(skymaps[0])), degrees=True)
-    skymaps_persqdeg = [skymap/area_per_pixel for skymap in skymaps]
 
     fig = plt.figure()
     ax = plt.axes(projection='astro hours mollweide')
     ax.grid()
-
-    contours = [ax.contour_hpx((skymap_persqdeg, 'ICRS'), nested=False, cmap=cmap_instances[idx]) for idx, skymap_persqdeg in enumerate(skymaps_persqdeg)]
+    contours = [ax.contour_hpx((ligo.skymap.postprocess.util.find_greedy_credible_levels(skymap), 'ICRS'), nested=False, cmap=cmap_instances[idx]) for idx, skymap in enumerate(skymaps)]
     patches = [mpatches.Patch(color=contours[idx].cmap(10**(idx+1)), label=label) for idx, label in enumerate(labels)]
-    plt.legend(handles=patches, bbox_to_anchor=(0.0, 1.2), loc='center left', borderaxespad=0.)
-
+    for idx, contour in enumerate(contours):
+        ax.clabel(contour, inline=True, fontsize=6)
+    plt.legend(handles=patches)
+    plt.tight_layout()
     plt.savefig(filename)
     plt.close()
 
