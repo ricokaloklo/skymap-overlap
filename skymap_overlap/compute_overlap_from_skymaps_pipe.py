@@ -51,6 +51,8 @@ def main():
         universe = "grid"
         extra_lines.append("grid_resource = batch slurm")
 
+    f = open("compute_overlap_from_skymaps.sh", "w")
+
     # Compute overlap
     if len(args.skymap) >= 2:
         # At least two skymaps, now we can compute the pairwise overlap
@@ -78,4 +80,7 @@ def main():
                 " --output " + os.path.abspath(os.path.join(compute_overlap_job_name, pairwise_overlap_out_str.format(prefix_1=prefix_1, prefix_2=prefix_2)))
             compute_overlap_job.add_arg(argument_str, retry=3)
 
+            f.write(f"compute_overlap {argument_str}\n")
+
     dag.build(fancyname=False)
+    f.close()
