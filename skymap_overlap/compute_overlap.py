@@ -108,6 +108,7 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
     assert len(skymaps) == len(cmaps)
 
     # Prepare the custom cmap instances
+    bkgrd = np.asarray([1., 1., 1.,])
     cmap_instances = []
     for idx, cmap in enumerate(cmaps):
         cmap = cm.get_cmap(cmap)
@@ -115,7 +116,9 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
             cmap_instances.append(cmap)
 
         cmap_transparent = cmap(np.arange(cmap.N))
-        cmap_transparent[:,-1] = np.linspace(0, 1, cmap.N)
+        alphas = np.linspace(0, 1, cmap.N)
+        for j in range(cmap.N):
+            cmap_transparent[j,:-1] = cmap_transparent[j,:-1]*alphas[j] + bkgrd*(1. - alphas[j])
         cmap_transparent = ListedColormap(cmap_transparent)
         cmap_instances.append(cmap_transparent)
 
@@ -127,8 +130,8 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
     ax = plt.axes(projection='astro hours mollweide')
     ax.grid()
 
-    ims = [ax.imshow_hpx((skymap_persqdeg, 'ICRS'), nested=False, vmin=0., vmax=skymap_persqdeg.max(), cmap=cmap_instances[idx]) for idx, skymap_persqdeg in enumerate(skymaps_persqdeg)]
-    patches = [mpatches.Patch(color=ims[idx].cmap(10**(idx+1)), label=label) for idx, label in enumerate(labels)]
+    contours = [ax.contour_hpx((skymap_persqdeg, 'ICRS'), nested=False, cmap=cmap_instances[idx]) for idx, skymap_persqdeg in enumerate(skymaps_persqdeg)]
+    patches = [mpatches.Patch(color=contours[idx].cmap(10**(idx+1)), label=label) for idx, label in enumerate(labels)]
     plt.legend(handles=patches, bbox_to_anchor=(0.0, 1.2), loc='center left', borderaxespad=0.)
 
     plt.savefig(filename)
