@@ -1,6 +1,5 @@
 import setuptools
 
-# Read hanabi/_version.py
 # Code from StackOverflow: https://stackoverflow.com/questions/458550/standard-way-to-embed-version-into-python-package
 import re
 VERSIONFILE="skymap_overlap/_version.py"
