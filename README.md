@@ -34,6 +34,28 @@ To compute the overlap between two skymaps $`p(\Omega)`$ and $`q(\Omega)`$, one 
  \frac{\displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ p(\Omega)\right] \mathbf{1}_{\rm 90\% CR} \left[ q(\Omega) \right] d\Omega}{{\rm min} (\displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ p(\Omega) \right] \; d\Omega , \displaystyle\int \mathbf{1}_{\rm 90\% CR} \left[ q(\Omega) \right] \; d\Omega)},
  ```
  where $`\mathbf{1}`$ is the indicator function.
+ 
+ 4. Cross-highest posterior density (HPD)
+ ```math
+ \max
+ \left\{
+ 1 - \mathcal{H}(p, q),
+ 1 - \mathcal{H}(q, p)
+ \right\}
+ ```
+ where
+ ```math
+ \mathcal{H}(p, q) = 
+ \int
+ \mathbf{1}
+ \left[
+ q(\Omega) >
+ q(\Omega_{p, \mathrm{MAP}})
+ \right]
+ q(\Omega)
+ d\Omega \,,
+ ```
+ $`\mathbf{1}`$ is the indicator function, $`\Omega_{p,\mathrm{MAP}}`$ is the maximum a posteriori estimate of the sky location $`\Omega`$ for $`p`$.
 
 Given two FITS skymaps, the simplest usage is
 ```
