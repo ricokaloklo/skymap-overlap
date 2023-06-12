@@ -21,7 +21,7 @@ def main():
     parser.add_argument("--skymap", metavar="PATH", action="append", help="A list of paths pointing to the probability skymaps")
     parser.add_argument("--accounting-tag", type=str, default="ligo.dev.o3.cbc.lensing.multi", help="Accounting tag")
     parser.add_argument("--request-disk", type=float, default=1.0, help="Disk usage (in GB) expected")
-    parser.add_argument("--request-memory", type=float, default=1.0, help="Memory usage (in GB) expected")
+    parser.add_argument("--request-memory", type=float, default=4.0, help="Memory usage (in GB) expected")
     parser.add_argument("--slurm", action="store_true", help="Run on a condor+slurm cluster")
     parser.add_argument("--plot", action = "store_true", help = "Visualize the skymaps")
     parser.add_argument("--verbose", action="store_true", help="Be very verbose")
