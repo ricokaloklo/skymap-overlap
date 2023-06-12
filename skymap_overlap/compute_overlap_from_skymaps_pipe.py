@@ -52,6 +52,8 @@ def main():
         "accounting_group = {}".format(args.accounting_tag),
         "request_memory = {:.1f} GB".format(args.request_memory),
         "request_disk = {:.1f} GB".format(args.request_disk),
+        "request_cpus = 1",
+        "getenv = True",
     ]
     if args.slurm:
         universe = "grid"
