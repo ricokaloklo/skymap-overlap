@@ -31,7 +31,11 @@ class PosteriorOverlap(OverlapStatistic):
     @staticmethod
     def compute_overlap(*skymaps):
         # Simply sum over all pixels
-        return np.sum(np.multiply(*skymaps))
+        # NOTE To avoid under/over-flow, add the log of pdfs then exponentiate
+        _out = np.zeros_like(skymaps[0])
+        for skymap in skymaps:
+            _out += np.log(skymap)
+        return np.nansum(np.exp(_out))
 
 class NormalizedPosteriorOverlap(OverlapStatistic):
     def __init__(self):
