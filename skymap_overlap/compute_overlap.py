@@ -16,20 +16,50 @@ import argparse
 import sys
 import os
 
+
 class OverlapStatistic(object):
+    """
+    Base class for overlap statistics
+
+    Attributes
+    ----------
+    name : str
+
+    Methods
+    -------
+    compute_overlap(*skymaps)
+    """
     def __init__(self):
+        """
+        Constructor
+        """
         self.name = "overlap"
 
     @staticmethod
     def compute_overlap(*skymaps):
         return 0.0
 
+
 class PosteriorOverlap(OverlapStatistic):
     def __init__(self):
+        """
+        Constructor
+        """
         self.name = "posterior_overlap"
 
     @staticmethod
     def compute_overlap(*skymaps):
+        """
+        Compute the overlap between two skymaps
+
+        Parameters
+        ----------
+        skymaps : list of skymaps
+
+        Returns
+        -------
+        overlap : overlap
+        """
         # Simply sum over all pixels
         # NOTE To avoid under/over-flow, add the log of pdfs then exponentiate
         _out = np.zeros_like(skymaps[0])
@@ -37,76 +67,200 @@ class PosteriorOverlap(OverlapStatistic):
             _out += np.log(skymap)
         return np.nansum(np.exp(_out))
 
+
 class NormalizedPosteriorOverlap(OverlapStatistic):
+    """
+    Normalized posterior overlap
+    """
     def __init__(self):
+        """
+        Constructor
+        """
         self.name = "normalized_posterior_overlap"
 
     @staticmethod
     def compute_overlap(*skymaps):
+        """
+        Compute the normalized posterior overlap between two skymaps
+
+        Parameters
+        ----------
+        skymaps : list of skymaps
+
+        Returns
+        -------
+        overlap : overlap
+        """
         unnormalized_overlap = PosteriorOverlap.compute_overlap(*skymaps)
         normalization = np.prod([np.sqrt(PosteriorOverlap.compute_overlap(m, m)) for m in skymaps])
         return unnormalized_overlap/normalization
 
 class CredibleRegionOverlap(OverlapStatistic):
     def __init__(self, percent):
+        """
+        Constructor
+
+        Parameters
+        ----------
+        percent : credible region percentage
+        """
         assert 0 < percent < 100, "percent must be between 0 and 100"
         self.name = "{percent}%_credible_region_overlap".format(percent=percent)
         self.percent = percent
 
     @staticmethod
     def mask_skymap(skymap, percent):
+        """
+        Mask a skymap with a given credible region percentage
+
+        Parameters
+        ----------
+        skymap : skymap
+        percent : credible region percentage
+
+        Returns
+        -------
+        masked_skymap : masked skymap
+        """
         masked_skymap = np.zeros_like(skymap)
         masked_skymap[ligo.skymap.postprocess.util.find_greedy_credible_levels(skymap) <= percent/100.] = 1.0
         return masked_skymap
 
     @staticmethod
     def count_masked_pixel(skymap):
+        """
+        Count the number of masked pixels in a skymap
+
+        Parameters
+        ----------
+        skymap : skymap
+
+        Returns
+        -------
+        number of masked pixels
+        """
         return len(skymap[skymap == 1.0])
 
     def compute_overlap(self, *skymaps):
+        """
+        Compute the overlap between two skymaps
+
+        Parameters
+        ----------
+        skymaps : list of skymaps
+
+        Returns
+        -------
+        overlap : overlap
+        """
         masked_skymaps = [self.mask_skymap(m, self.percent) for m in skymaps]
         joint_masked_skymaps = np.multiply(*masked_skymaps)
         return self.count_masked_pixel(joint_masked_skymaps)/np.amin([self.count_masked_pixel(m) for m in masked_skymaps])
 
-class CrossHPDStatistic(OverlapStatistic):
-    def __init__(self):
-        self.name = "cross_hpd_statistic"
 
+class CrossHPDStatistic(OverlapStatistic):
+    """
+    Cross HPD statistic
+    """
+    def __init__(self):
+        """
+        Constructor
+        """
+        self.name = "cross_hpd_statistic"
 
     @staticmethod
     def get_ra_dec_from_skymap(skymap):
+        """
+        Get the ra and dec of the maximum probability pixel in a skymap
+
+        Parameters
+        ----------
+        skymap : skymap
+
+        Returns
+        -------
+        ra : ra of the maximum probability pixel
+        dec : dec of the maximum probability pixel
+        """
         index_of_max = np.argmax(skymap)
         nside = hp.npix2nside(len(skymap))
         theta, phi = hp.pix2ang(nside, index_of_max)
-        return phi,np.pi/2-theta
+        return phi, np.pi/2-theta
 
-    def compute_overlap(self,skymap1,skymap2,single_skymap1,single_skymap2):
+    def compute_overlap(self, skymap1, skymap2, single_skymap1, single_skymap2):
+        """
+        Compute the overlap between two skymaps
+
+        Parameters
+        ----------
+        skymap1 : skymap
+        skymap2 : skymap
+        single_skymap1 : single skymap
+        single_skymap2 : single skymap
+
+        Returns
+        -------
+        overlap : overlap
+        """
         from ligo.skymap.postprocess.crossmatch import crossmatch
         from astropy.coordinates import SkyCoord
         ra, dec = self.get_ra_dec_from_skymap(single_skymap1)
-        coord = SkyCoord(ra,dec,unit="rad")
-        result = crossmatch(skymap2,coord)
-        searched_prob_1 = result.searched_prob
+        coord = SkyCoord(ra, dec, unit="rad")
+        result = crossmatch(skymap2, coord)
+        searched_prob_1 = np.min([result.searched_prob, 1.0])
         ra, dec = self.get_ra_dec_from_skymap(single_skymap2)
-        coord = SkyCoord(ra,dec,unit="rad")
-        result = crossmatch(skymap1,coord)
-        searched_prob_2 = result.searched_prob
+        coord = SkyCoord(ra, dec, unit="rad")
+        result = crossmatch(skymap1, coord)
+        searched_prob_2 = np.min([result.searched_prob, 1.0])
         return np.max([1-searched_prob_1, 1-searched_prob_2])
 
 
 def read_skymap(filename):
+    """
+    Read a skymap from a file
+
+    Parameters
+    ----------
+    filename : filename
+
+    Returns
+    -------
+    skymap : skymap
+    """
     hpx, _ = ligo.skymap.io.fits.read_sky_map(filename)
     return hpx
 
+
 def enforce_same_resolution(*skymaps):
+    """
+    Enforce that all skymaps have the same resolution
+
+    Parameters
+    ----------
+    skymaps : list of skymaps
+
+    Returns
+    -------
+    skymaps : list of skymaps
+    """
     skymaps = list(skymaps)
     nside_min = np.amin([hp.get_nside(hpx) for hpx in skymaps])
     for i in range(len(skymaps)):
         skymaps[i] = ligo.skymap.postprocess.util.smooth_ud_grade(skymaps[i], nside_min)
-        
     return skymaps
 
+
 def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
+    """
+    Plot skymaps
+
+    Parameters
+    ----------
+    skymaps : list of skymaps
+    labels : list of labels
+    cmaps : list of cmaps
+    filename : filename
+    """
     # Sanity check
     assert len(skymaps) == len(labels)
     assert len(skymaps) == len(cmaps)
