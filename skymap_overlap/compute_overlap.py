@@ -299,6 +299,7 @@ def main():
     parser.add_argument("--skymap", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
     parser.add_argument("--plot", action = "store_true", help = "Visualize the skymaps")
+    parser.add_argument("--labels", default = [], action = "append", help = "Labels for the skymap.")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
     args = parser.parse_args()
 
@@ -349,8 +350,13 @@ def main():
         print(out_str, file=sys.stderr)
 
     if args.plot:
-        skymap_1_label = os.path.basename(args.skymap[0]).split(".fits")[0]
-        skymap_2_label = os.path.basename(args.skymap[1]).split(".fits")[0]
+        if len(args.labels) == 2:
+            skymap_1_label = args.labels[0]
+            skymap_2_label = args.labels[1]
+        else:
+            skymap_1_label = os.path.basename(args.skymap[0]).split(".fits")[0]
+            skymap_2_label = os.path.basename(args.skymap[1]).split(".fits")[0]
+
         if args.output is not None and args.output.endswith(".dat"):
             out_plot_filename = args.output.replace(".dat", ".pdf")
         else:
