@@ -278,7 +278,7 @@ def make_transparent_colormap(colormap):
     return cmap_transparent
 
 
-def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
+def plot_skymaps(skymaps, labels, colors, filename="skymaps.pdf"):
     """
     Plot skymaps
 
@@ -286,31 +286,24 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
     ----------
     skymaps : list of skymaps
     labels : list of labels
-    cmaps : list of cmaps
+    colors : list of colors
     filename : filename
     """
     # Sanity check
     assert len(skymaps) == len(labels)
-    assert len(skymaps) == len(cmaps)
-
-    # Prepare the custom cmap instances
-    bkgrd = np.asarray([1., 1., 1.,])
-    cmap_instances = []
-    for idx, cmap in enumerate(cmaps):
-        cmap_instances.append(make_transparent_colormap(cmap))
+    assert len(skymaps) == len(colors)
 
     skymaps = enforce_same_resolution(*skymaps)
 
     fig = plt.figure()
     ax = plt.axes(projection='astro hours mollweide')
     ax.grid()
-    contours = [ax.contour_hpx((ligo.skymap.postprocess.util.find_greedy_credible_levels(skymap), 'ICRS'), nested=False, cmap=cmap_instances[idx]) for idx, skymap in enumerate(skymaps)]
-    patches = [mpatches.Patch(color=cmap_instances[idx].colors[int(cmap_instances[idx].N/2)], label=label) for idx, label in enumerate(labels)]
+    contours = [ax.contour_hpx((ligo.skymap.postprocess.util.find_greedy_credible_levels(skymap), 'ICRS'), levels=[0.3, 0.6, 0.9], linewidths=1, nested=False, colors=colors[idx]) for idx, skymap in enumerate(skymaps)]
+    patches = [mpatches.Patch(color=colors[idx], label=label) for idx, label in enumerate(labels)]
     for idx, contour in enumerate(contours):
-        ax.clabel(contour, inline=True, fontsize=6)
-    plt.legend(handles=patches)
-    plt.tight_layout()
-    plt.savefig(filename)
+        labels = ax.clabel(contour, inline=True, fontsize=6)
+    plt.legend(handles=patches, loc=0)
+    plt.savefig(filename, bbox_inches="tight", transparent=True)
     plt.close()
 
 def main():
@@ -380,5 +373,5 @@ def main():
             out_plot_filename = args.output.replace(".dat", ".pdf")
         else:
             out_plot_filename = "skymaps.pdf"
-        plot_skymaps([skymap_1, skymap_2], [skymap_1_label, skymap_2_label], ["cylon", "viridis"], out_plot_filename)
+        plot_skymaps([skymap_1, skymap_2], [skymap_1_label, skymap_2_label], ["tab:blue", "tab:orange"], out_plot_filename)
 
