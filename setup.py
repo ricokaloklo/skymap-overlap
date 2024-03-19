@@ -1,4 +1,5 @@
 import setuptools
+from pathlib import Path
 
 # Code from StackOverflow: https://stackoverflow.com/questions/458550/standard-way-to-embed-version-into-python-package
 import re
@@ -15,9 +16,9 @@ setuptools.setup(
     name="skymap-overlap",
     version=verstr,
     author="Rico Ka Lok Lo",
-    author_email="kllo@caltech.edu",
+    author_email="ka-lok.lo@ligo.org",
     description="Compute overlap between two skymaps",
-    long_description="LONG DESCRIPTION HERE",
+    long_description=Path("README.md").read_text(encoding="utf-8"),
     url="https://git.ligo.org/ka-lok.lo/skymap-overlap",
     packages=[
         "skymap_overlap",
@@ -34,11 +35,5 @@ setuptools.setup(
         "ligo.skymap",
         "pycondor",
     ],
-    classifiers=[
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: POSIX",
-    ],
-    python_requires='>=3.6',
+    python_requires='>=3.9',
 )
