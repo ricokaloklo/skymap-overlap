@@ -250,6 +250,34 @@ def enforce_same_resolution(*skymaps):
     return skymaps
 
 
+def make_transparent_colormap(colormap):
+    """
+    Produce a transparent colormap from the given colormap.
+
+    Parameters
+    ----------
+    colormap : str
+        The name of the colormap to be made transparent.
+
+    Returns
+    -------
+    ListedColormap
+        The transparent colormap.
+    """
+    cmap = plt.get_cmap(colormap)
+    cmap_transparent = cmap(np.arange(cmap.N))
+    alphas = np.linspace(0, 1, cmap.N)
+    bkgrd = np.asarray([1., 1., 1.,])
+    for j in range(cmap.N):
+        cmap_transparent[j,:-1] = cmap_transparent[j,:-1]*alphas[j] + bkgrd*(1. - alphas[j])
+    # Mess with the alpha levels for the first 20% of the colors
+    _idxs = np.arange(0, int(0.2*cmap.N), 1)
+    cmap_transparent[_idxs,-1] = np.linspace(0, 1, len(_idxs))
+    cmap_transparent = ListedColormap(cmap_transparent)
+
+    return cmap_transparent
+
+
 def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
     """
     Plot skymaps
@@ -269,16 +297,7 @@ def plot_skymaps(skymaps, labels, cmaps, filename="skymaps.pdf"):
     bkgrd = np.asarray([1., 1., 1.,])
     cmap_instances = []
     for idx, cmap in enumerate(cmaps):
-        cmap = cm.get_cmap(cmap)
-        if idx == 0:
-            cmap_instances.append(cmap)
-
-        cmap_transparent = cmap(np.arange(cmap.N))
-        alphas = np.linspace(0, 1, cmap.N)
-        for j in range(cmap.N):
-            cmap_transparent[j,:-1] = cmap_transparent[j,:-1]*alphas[j] + bkgrd*(1. - alphas[j])
-        cmap_transparent = ListedColormap(cmap_transparent)
-        cmap_instances.append(cmap_transparent)
+        cmap_instances.append(make_transparent_colormap(cmap))
 
     skymaps = enforce_same_resolution(*skymaps)
 
