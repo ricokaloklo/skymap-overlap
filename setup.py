@@ -19,6 +19,7 @@ setuptools.setup(
     author_email="ka-lok.lo@ligo.org",
     description="Compute overlap between two skymaps",
     long_description=Path("README.md").read_text(encoding="utf-8"),
+    long_description_content_type="text/markdown",
     url="https://git.ligo.org/ka-lok.lo/skymap-overlap",
     packages=[
         "skymap_overlap",
