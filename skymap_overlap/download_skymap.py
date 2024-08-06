@@ -5,25 +5,45 @@ import argparse
 import sys
 
 def download_skymap(id, db, args, use_bayestar_only=False):
+	filename = None
 	try:
-		# Use LALInference skymap if possible, except when use_bayestar_only is set
+		# Use PE skymap if possible, except when use_bayestar_only is set
 		if not use_bayestar_only:
-			r = db.files(id, "LALInference.fits.gz")
-			if args.verbose:
-				print("Using LALInference skymap for {0}".format(id), file=sys.stderr)
+			try:
+				# Try bilby first
+				filename = "Bilby.multiorder.fits"
+				r = db.files(id, filename)
+				if args.verbose:
+					print("Using Bilby skymap for {0}".format(id), file=sys.stderr)
+			except:
+				# Fallback to LALInference for older events
+				filename = "LALInference.fits.gz"
+				r = db.files(id, filename)
+				if args.verbose:
+					print("Using LALInference skymap for {0}".format(id), file=sys.stderr)
 		else:
+			filename = ""
 			raise TypeError
 	except:
 		try:
-			r = db.files(id, "bayestar.fits.gz")
+			filename = "bayestar.fits.gz"
+			r = db.files(id, filename)
 			if args.verbose:
 				print("Using Bayestar skymap for {0}".format(id), file=sys.stderr)
 		except:
-			r = db.files(id, "subthreshold.bayestar.fits.gz")
+			filename = "subthreshold.bayestar.fits.gz"
+			r = db.files(id, filename)
 			if args.verbose:
 				print("Using subthreshold Bayestar skymap for {0}".format(id), file=sys.stderr)
 
-	outfile = open("{0}_skymap.fits.gz".format(id), "wb")
+	out_filename = "{0}_skymap.fits.gz".format(id)
+	if filename.endswith("fits.gz"):
+		outfile = open(out_filename, "wb")
+	else:
+		import gzip
+		outfile = gzip.open(out_filename, "wb")
+	if args.verbose:
+		print("Saving skymap to {0}".format(out_filename), file=sys.stderr)
 	outfile.write(r.read())
 	outfile.close()
 
