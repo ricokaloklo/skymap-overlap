@@ -311,7 +311,7 @@ def main():
     parser.add_argument("--skymap", action="append", type=str, metavar="PATH", help="Path to the two sets of FITS skymaps")
     parser.add_argument("--output", type=str, metavar="PATH", help="Path to the text file storing the output")
     parser.add_argument("--plot", action = "store_true", help = "Visualize the skymaps")
-    parser.add_argument("--labels", default = [], action = "append", help = "Labels for the skymap.")
+    parser.add_argument("--label", "--labels", default = [], action = "append", help = "Label for the skymaps.")
     parser.add_argument("--verbose", action = "store_true", help = "Be very verbose")
     args = parser.parse_args()
 
