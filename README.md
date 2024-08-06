@@ -1,4 +1,6 @@
 # skymap-overlap
+![license](https://img.shields.io/github/license/ricokaloklo/skymap-overlap)
+[![GitHub release](https://img.shields.io/github/v/release/ricokaloklo/skymap-overlap.svg)](https://github.com/ricokaloklo/skymap-overlap/releases)
 
 Compute the overlap between two skymaps
 
