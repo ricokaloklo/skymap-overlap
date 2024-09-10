@@ -278,7 +278,7 @@ def make_transparent_colormap(colormap):
     return cmap_transparent
 
 
-def plot_skymaps(skymaps, labels, colors, filename="skymaps.pdf"):
+def plot_skymaps(skymaps, labels, colors, RA_unit="hours", filename="skymaps.pdf"):
     """
     Plot skymaps
 
@@ -287,6 +287,7 @@ def plot_skymaps(skymaps, labels, colors, filename="skymaps.pdf"):
     skymaps : list of skymaps
     labels : list of labels
     colors : list of colors
+    RA_unit : unit for the right ascension, either hours or degrees
     filename : filename
     """
     # Sanity check
@@ -296,7 +297,12 @@ def plot_skymaps(skymaps, labels, colors, filename="skymaps.pdf"):
     skymaps = enforce_same_resolution(*skymaps)
 
     fig = plt.figure()
-    ax = plt.axes(projection='astro hours mollweide')
+    if RA_unit == "degrees":
+        ax = plt.axes(projection='astro degrees mollweide')
+    elif RA_unit == "hours":
+        ax = plt.axes(projection='astro hours mollweide')
+    else:
+        raise ValueError("Does not understand {}".format(RA_unit))
     ax.grid()
     contours = [ax.contour_hpx((ligo.skymap.postprocess.util.find_greedy_credible_levels(skymap), 'ICRS'), levels=[0.3, 0.6, 0.9], linewidths=1, nested=False, colors=colors[idx]) for idx, skymap in enumerate(skymaps)]
     patches = [mpatches.Patch(color=colors[idx], label=label) for idx, label in enumerate(labels)]
