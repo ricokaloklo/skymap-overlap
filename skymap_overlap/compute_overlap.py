@@ -368,9 +368,9 @@ def main():
         print(out_str, file=sys.stderr)
 
     if args.plot:
-        if len(args.labels) == 2:
-            skymap_1_label = args.labels[0]
-            skymap_2_label = args.labels[1]
+        if len(args.label) == 2:
+            skymap_1_label = args.label[0]
+            skymap_2_label = args.label[1]
         else:
             skymap_1_label = os.path.basename(args.skymap[0]).split(".fits")[0]
             skymap_2_label = os.path.basename(args.skymap[1]).split(".fits")[0]
