@@ -89,5 +89,29 @@ This package provides a command-line-interface tool `combine_skymaps` that is id
 combine_skymaps INPUT1.fits INPUT2.fits OUTPUT.fits
 ```
 
+## How to cite
+If you have used this code in your research that leads to a publication, please cite the following article:
+```
+@article{Wong:2021lxf,
+    title = {Using overlap of sky localization probability maps for filtering potentially lensed pairs of gravitational-wave signals},
+    author = {Wong, Henry W. Y. and Chan, Lok W. L. and Wong, Isaac C. F. and Lo, Rico K. L. and Li, Tjonnie G. F.},
+    journal = {Phys. Rev. D},
+    volume = {112},
+    issue = {12},
+    pages = {124005},
+    numpages = {9},
+    year = {2025},
+    month = {Dec},
+    publisher = {American Physical Society},
+    doi = {10.1103/qc7y-z9hy},
+    eprint = "2112.05932",
+    archivePrefix = "arXiv",
+    primaryClass = "gr-qc"
+}
+```
+
+## License
+The package is licensed under the MIT License.
+
 ## Author
 Rico K. L. Lo @ka-lok.lo
